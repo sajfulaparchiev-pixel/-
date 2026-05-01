@@ -1,0 +1,8 @@
+{
+  "name": "Skillflow",
+  "description": "Skill Swap Hub",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
