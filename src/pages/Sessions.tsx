@@ -37,7 +37,7 @@ const Sessions = () => {
   const [chat, setChat] = useState<{ open: boolean; name: string; id: string } | null>(null);
   const [reviewTarget, setReviewTarget] = useState<Exchange | null>(null);
 
-  const fetchExchanges = async () => {
+  const fetchExchanges = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     
@@ -72,7 +72,7 @@ const Sessions = () => {
 
     setExchanges(mergedExchanges as Exchange[]);
     setLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchExchanges();
@@ -88,7 +88,7 @@ const Sessions = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user, fetchExchanges]);
 
   const respond = async (ex: Exchange, status: "accepted" | "rejected") => {
     const { error } = await supabase

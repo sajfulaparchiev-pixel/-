@@ -32,26 +32,66 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Safety fallback: ensure loading is always turned off after a timeout
     const fallbackTimer = setTimeout(() => {
-      setLoading(false);
+      if (isMounted) setLoading(false);
     }, 5000);
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      clearTimeout(fallbackTimer);
-    }).catch((err) => {
-      console.error("Critical Auth error:", err);
-      setLoading(false);
-      clearTimeout(fallbackTimer);
-    });
+    // Get initial session with built-in retry for abort errors
+    const getInitialSession = async (retries = 2) => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (isMounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          console.log("Session loaded successfully", session?.user?.id || "No user");
+        }
+      } catch (err: any) {
+        // Ignore aborted signal errors which can happen in some browser environments or during rapid re-renders
+        const isAbortError = err.name === 'AbortError' || 
+                           err.message?.includes('aborted') || 
+                           err.message?.includes('signal is aborted');
+        
+        if (isAbortError && retries > 0 && isMounted) {
+          // If aborted but still mounted, it might be a transient browser issue or re-render
+          // We don't log this to console anymore to avoid scaring the user
+          await new Promise(r => setTimeout(r, 800));
+          return getInitialSession(retries - 1);
+        }
+                           
+        if (!isAbortError) {
+          console.error("Initial session load failed:", err);
+          // Only clear token if it's a real error, not a network abort/timeout
+          if (err.status !== 401 && err.status !== 403) {
+            localStorage.removeItem('supabase.auth.token');
+          }
+        }
+        
+        // If it was aborted, we don't necessarily want to set session to null yet 
+        // if another attempt might succeed or onAuthStateChange might fire.
+        // But if we've run out of retries, we must finalize.
+        if (isMounted && (!isAbortError || retries === 0)) {
+          setSession(null);
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          clearTimeout(fallbackTimer);
+        }
+      }
+    };
+
+    getInitialSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
         console.log("Auth event:", event);
         setSession(session);
         setUser(session?.user ?? null);
@@ -60,6 +100,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
       clearTimeout(fallbackTimer);
     };

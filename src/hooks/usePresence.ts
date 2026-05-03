@@ -26,9 +26,13 @@ const ensureChannel = (userId: string, showOnline: boolean) => {
       onlineSet = new Set(Object.keys(state));
       notify();
     })
-    .subscribe(async (status) => {
+    .subscribe(async (status, err) => {
+      console.log("Presence subscription status:", status, err || "");
       if (status === "SUBSCRIBED" && showOnline) {
         await channel!.track({ online_at: new Date().toISOString() });
+      }
+      if (status === "CHANNEL_ERROR") {
+        console.error("Presence subscription failed. Ensure Realtime is enabled in your Supabase project settings (Project Settings -> API -> Realtime).", err);
       }
     });
 };

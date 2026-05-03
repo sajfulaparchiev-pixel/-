@@ -26,15 +26,23 @@ interface Props {
 }
 
 const MAX_ITEMS = 6;
-const MAX_FILE_MB = 250; // Increased to match chat limit for videos
+const MAX_FILE_MB = 100; // Adjusted for practical limits
+const FALLBACK_BASE64_MAX_MB = 10; // Increased to 10MB fallback limit
 
-const compressImage = (file: File, maxSize = 1024, quality = 0.85): Promise<string> =>
+const compressImage = (file: File, maxSize = 4096, quality = 0.92): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
         let { width, height } = img;
+        
+        // Skip compression for reasonable sized images to keep 100% quality
+        if (width <= maxSize && height <= maxSize && file.size < 5 * 1024 * 1024) {
+          resolve(e.target?.result as string);
+          return;
+        }
+
         if (width > height && width > maxSize) {
           height = (height * maxSize) / width;
           width = maxSize;
@@ -48,7 +56,10 @@ const compressImage = (file: File, maxSize = 1024, quality = 0.85): Promise<stri
         const ctx = canvas.getContext("2d");
         if (!ctx) return reject(new Error("no ctx"));
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/webp", quality));
+        
+        // Preserve format if possible
+        const type = file.type === "image/png" ? "image/png" : "image/jpeg";
+        resolve(canvas.toDataURL(type, quality));
       };
       img.onerror = reject;
       img.src = e.target?.result as string;
@@ -67,7 +78,7 @@ const PortfolioGallery = ({ userId, isOwner }: Props) => {
   const [pendingDesc, setPendingDesc] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("portfolio_items")
@@ -76,11 +87,11 @@ const PortfolioGallery = ({ userId, isOwner }: Props) => {
       .order("created_at", { ascending: false });
     if (!error) setItems((data as PortfolioItem[]) || []);
     setLoading(false);
-  };
+  }, [userId]);
 
   useEffect(() => {
     load();
-  }, [userId]);
+  }, [userId, load]);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -108,7 +119,7 @@ const PortfolioGallery = ({ userId, isOwner }: Props) => {
           type: file.type
         });
       } else {
-        const compressed = await compressImage(file, 1200, 0.85);
+        const compressed = await compressImage(file, 4096, 0.92);
         setPendingItem({
           file,
           previewUrl: compressed,
@@ -155,31 +166,49 @@ const PortfolioGallery = ({ userId, isOwner }: Props) => {
           upsert: false
         });
 
-      if (uploadResult.error && (uploadResult.error.message.includes("bucket not found") || uploadResult.error.message.includes("not found"))) {
-        console.log("Portfolio bucket not found, attempting to create...");
-        try {
-          await supabase.storage.createBucket('chat_attachments', { public: true });
-          uploadResult = await supabase.storage
-            .from('chat_attachments')
-            .upload(filePath, pendingItem.file, {
-              cacheControl: '3600',
-              upsert: false
-            });
-        } catch (e) {
-          console.error("Bucket creation or retry failed:", e);
+      if (uploadResult.error) {
+        const err = uploadResult.error as any;
+        console.log("Portfolio bucket not found or upload error, attempting to check...", err);
+        
+        if (err.message?.includes("bucket not found") || err.status === 404 || err.message?.includes("Bucket not found")) {
+          try {
+            await supabase.storage.createBucket('chat_attachments', { public: true });
+            uploadResult = await supabase.storage
+              .from('chat_attachments')
+              .upload(filePath, pendingItem.file, {
+                cacheControl: '3600',
+                upsert: false
+              });
+          } catch (e) {
+            console.error("Bucket creation or retry failed:", e);
+            throw new Error("STORAGE_BUCKET_MISSING");
+          }
         }
       }
 
       const { data: uploadData, error: uploadError } = uploadResult;
 
       if (uploadError) {
-        console.error("Portfolio upload failed:", uploadError);
-        // Fallback for images < 1MB if storage fails (backward compatibility/safety)
-        if (pendingItem.file.size < 1024 * 1024 && pendingItem.type.startsWith('image/')) {
-           console.log("Falling back to Base64 for small image");
-           fileUrl = pendingItem.previewUrl;
+        console.error("Portfolio upload failed final:", uploadError);
+        
+        // Use Base64 as fallback for any file within reasonable size if storage fails
+        if (pendingItem.file.size < FALLBACK_BASE64_MAX_MB * 1024 * 1024) {
+           console.log("Falling back to Base64 because storage failed");
+           
+           // If it's already a base64 (from compressImage), use it.
+           // Otherwise, read it now.
+           if (pendingItem.previewUrl.startsWith('data:')) {
+             fileUrl = pendingItem.previewUrl;
+           } else {
+             const reader = new FileReader();
+             fileUrl = await new Promise((resolve, reject) => {
+               reader.onload = () => resolve(reader.result as string);
+               reader.onerror = () => reject(new Error("Ошибка чтения файла"));
+               reader.readAsDataURL(pendingItem.file);
+             });
+           }
         } else {
-           throw new Error(`Ошибка загрузки (${uploadError.message}). Убедитесь, что Хранилище Supabase настроено.`);
+           throw new Error(`Файл слишком велик для альтернативной загрузки (${(pendingItem.file.size / 1024 / 1024).toFixed(1)}MB). Пожалуйста, создайте ПУБЛИЧНЫЙ бакет 'chat_attachments' в Supabase.`);
         }
       } else {
         const { data: { publicUrl } } = supabase.storage
@@ -310,6 +339,9 @@ const PortfolioGallery = ({ userId, isOwner }: Props) => {
       <Dialog open={!!pendingItem} onOpenChange={(o) => !o && setPendingItem(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
+            <DialogTitle>Добавить в портфолио</DialogTitle>
+          </DialogHeader>
+          <DialogHeader>
             <DialogTitle>Новая работа</DialogTitle>
           </DialogHeader>
           {pendingItem && (
@@ -349,6 +381,9 @@ const PortfolioGallery = ({ userId, isOwner }: Props) => {
       {/* Preview dialog */}
       <Dialog open={!!previewItem} onOpenChange={(o) => !o && setPreviewItem(null)}>
         <DialogContent className="sm:max-w-lg">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Просмотр файла</DialogTitle>
+          </DialogHeader>
           <DialogHeader>
             <DialogTitle>{previewItem?.title}</DialogTitle>
           </DialogHeader>

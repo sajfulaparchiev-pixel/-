@@ -71,9 +71,23 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
       channelRef.current = { offer: payload.payload.offer };
     });
 
-    channel.subscribe();
+    channel.subscribe((status, err) => {
+      console.log(`Call subscription status for user ${user.id}:`, status, err || "");
+      if (status === "CHANNEL_ERROR") {
+        console.error("Call subscription failed. Ensure Realtime is enabled in your Supabase project settings.", err);
+      }
+    });
     
     return () => {
+      if (channelRef.current?.channel) {
+        supabase.removeChannel(channelRef.current.channel);
+      }
+      if (peerConnection.current) {
+        peerConnection.current.close();
+      }
+      if (localStream.current) {
+        localStream.current.getTracks().forEach(track => track.stop());
+      }
       supabase.removeChannel(channel);
     };
   }, [user, callState]);
@@ -321,6 +335,9 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
       {/* Active / Outgoing Call Dialog */}
       <Dialog open={callState === "calling" || callState === "connected"} onOpenChange={(open) => !open && endCall()}>
         <DialogContent className="sm:max-w-3xl p-0 overflow-hidden bg-black text-white border-border/20 h-[80vh] flex flex-col">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{callState === "calling" ? "Вызов..." : "Звонок"}</DialogTitle>
+          </DialogHeader>
           <div className="p-4 bg-black/40 backdrop-blur-md absolute top-0 w-full z-10 flex justify-between items-center">
             <div>
               <p className="font-medium text-lg text-white">{partnerName}</p>

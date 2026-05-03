@@ -80,6 +80,9 @@ const SkillDetailDialog = ({ skill, open, onOpenChange }: SkillDetailDialogProps
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-lg rounded-3xl p-0 overflow-hidden border-none shadow-2xl max-h-[95vh] flex flex-col">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{skill.title}</DialogTitle>
+        </DialogHeader>
         <div className="relative h-20 sm:h-24 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10 shrink-0">
           <div className="absolute inset-0 bg-grid-white/10" />
         </div>

@@ -116,18 +116,12 @@ const Profile = () => {
 
   // Avatar helper for reviews
   const renderAvatar = (avatarId?: string, initials?: string) => {
-    const defaultAvatar = defaultAvatars.find((a) => a.id === avatarId);
-    if (defaultAvatar) {
-      return (
-        <Avatar className="w-10 h-10">
-          <AvatarFallback className={cn("text-lg", defaultAvatar.bg)}>{defaultAvatar.emoji}</AvatarFallback>
-        </Avatar>
-      );
-    }
     return (
-      <Avatar className="w-10 h-10">
-        <AvatarFallback className="bg-secondary text-secondary-foreground">{initials || "?"}</AvatarFallback>
-      </Avatar>
+      <UserAvatar 
+        avatarId={avatarId} 
+        userInitials={initials || "?"} 
+        size="h-10 w-10" 
+      />
     );
   };
 

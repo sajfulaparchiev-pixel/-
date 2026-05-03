@@ -80,8 +80,9 @@ interface ChatDialogProps {
   recipientId?: string;
 }
 
-const MAX_FILE_SIZE = 250 * 1024 * 1024; // 250 MB
-const MAX_IMAGE_DIMENSION = 1600; // for client-side compression
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+const FALLBACK_BASE64_MAX_SIZE = 10 * 1024 * 1024; // 10 MB fallback
+const MAX_IMAGE_DIMENSION = 4096;
 const QUICK_EMOJI = ["👍", "❤️", "😂", "🔥", "🎉", "🙏", "👏", "😍"];
 const MAX_RECORDING_SECONDS = 120; // 2 minutes
 
@@ -97,7 +98,7 @@ const EMOJI_CATEGORIES: Record<string, string[]> = {
 const makeConversationId = (a: string, b: string) =>
   a < b ? `${a}_${b}` : `${b}_${a}`;
 
-// Compress image to JPEG/WebP via canvas to keep payload small
+// Compress image to original type via canvas if massive, otherwise keep original
 const compressImage = (file: File): Promise<{ data: string; type: string; name: string }> =>
   new Promise((resolve, reject) => {
     const img = new Image();
@@ -105,6 +106,13 @@ const compressImage = (file: File): Promise<{ data: string; type: string; name: 
     reader.onload = () => {
       img.onload = () => {
         let { width, height } = img;
+        
+        // If image is small enough and fits dimensions, keep absolute 100% original quality
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION && file.size < 5 * 1024 * 1024) {
+          resolve({ data: reader.result as string, type: file.type, name: file.name });
+          return;
+        }
+
         if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
           const ratio = Math.min(
             MAX_IMAGE_DIMENSION / width,
@@ -113,14 +121,18 @@ const compressImage = (file: File): Promise<{ data: string; type: string; name: 
           width = Math.round(width * ratio);
           height = Math.round(height * ratio);
         }
+        
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         if (!ctx) return reject(new Error("Canvas not supported"));
         ctx.drawImage(img, 0, 0, width, height);
-        const data = canvas.toDataURL("image/webp", 0.85);
-        resolve({ data, type: "image/webp", name: file.name.replace(/\.[^.]+$/, ".webp") });
+        
+        // Try to keep original format (PNG/JPEG) but with high quality
+        const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
+        const data = canvas.toDataURL(outputType, 0.92);
+        resolve({ data, type: outputType, name: file.name });
       };
       img.onerror = () => reject(new Error("Не удалось обработать изображение"));
       img.src = reader.result as string;
@@ -331,7 +343,12 @@ const ChatDialog = ({
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Chat subscription status for ${conversationId}:`, status);
+        if (status === "CHANNEL_ERROR") {
+          console.error("Chat subscription failed. Check if Realtime is enabled in Supabase for table 'messages'.");
+        }
+      });
 
     channelRef.current = channel;
 
@@ -464,46 +481,61 @@ const ChatDialog = ({
         console.log("Uploading file to path:", filePath, "type:", file.type, "size:", file.size);
         setUploadProgress(10);
 
-        let uploadResult = await supabase.storage
-          .from('chat_attachments')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+        let uploadResult;
+        try {
+          uploadResult = await supabase.storage
+            .from('chat_attachments')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+        } catch (e) {
+          console.error("Initial upload exception:", e);
+          uploadResult = { data: null, error: e as any };
+        }
 
-        if (uploadResult.error && (uploadResult.error.message.includes("bucket not found") || uploadResult.error.message.includes("not found"))) {
-          console.log("Bucket not found, attempting to create...");
-          try {
-            await supabase.storage.createBucket('chat_attachments', { public: true });
-            uploadResult = await supabase.storage
-              .from('chat_attachments')
-              .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false
-              });
-          } catch (e) {
-            console.error("Bucket creation or retry failed:", e);
-          }
+        if (uploadResult.error) {
+           const err = uploadResult.error as any;
+           console.log("Upload failed, checking for bucket issues...", err);
+           
+           // If bucket doesn't exist, we might be able to create it if we have permissions, 
+           // but typically that's an admin task. We'll try once.
+           if (err.message?.includes("bucket not found") || err.status === 404 || err.message?.includes("Bucket not found")) {
+             try {
+               await supabase.storage.createBucket('chat_attachments', { public: true });
+               // Retry upload
+               uploadResult = await supabase.storage
+                .from('chat_attachments')
+                .upload(filePath, file, {
+                  cacheControl: '3600',
+                  upsert: false
+                });
+             } catch (bucketErr) {
+               console.error("Failed to create bucket manually:", bucketErr);
+               // If it still fails with "not found", we throw a VERY specific error
+               throw new Error("STORAGE_BUCKET_MISSING");
+             }
+           }
         }
 
         const { data: uploadData, error: uploadError } = uploadResult;
 
         if (uploadError) {
-          console.error("Storage upload error details:", uploadError);
+          console.error("Storage upload error final details:", uploadError);
           
-          // we fallback to base64 ONLY for very small files for reliability.
-          if (file.size > 1024 * 1024) {
-             throw new Error(`Не удалось загрузить видео (${uploadError.message}). Попробуйте файл поменьше или проверьте соединение.`);
+          // Use Base64 as fallback for any file within reasonable size if storage fails
+          if (file.size < FALLBACK_BASE64_MAX_SIZE) {
+            console.log("Falling back to Base64 because storage failed");
+            setUploadProgress(30);
+            const reader = new FileReader();
+            finalFileData = await new Promise((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = () => reject(new Error("Ошибка чтения файла"));
+              reader.readAsDataURL(file);
+            });
+          } else {
+             throw new Error(`Файл слишком велик для альтернативной загрузки (${(file.size / 1024 / 1024).toFixed(1)}MB). Пожалуйста, создайте ПУБЛИЧНЫЙ бакет 'chat_attachments' в Supabase или уменьшите размер файла.`);
           }
-          
-          console.log("Falling back to Base64 for small file");
-          setUploadProgress(30);
-          const reader = new FileReader();
-          finalFileData = await new Promise((resolve, reject) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = () => reject(new Error("Ошибка чтения файла"));
-            reader.readAsDataURL(file);
-          });
         } else {
           setUploadProgress(60);
           const { data: { publicUrl } } = supabase.storage
@@ -561,6 +593,15 @@ const ChatDialog = ({
       }, 500);
       
       setNewMessage("");
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (localTyping) {
+        setLocalTyping(false);
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "typing",
+          payload: { userId: user.id, isTyping: false }
+        });
+      }
       // Revoke the blob URL after a delay to ensure the UI has updated
       if (pendingFile?.data.startsWith('blob:')) {
         const urlToRevoke = pendingFile.data;
@@ -573,7 +614,7 @@ const ChatDialog = ({
       setSending(false);
       setUploadProgress(null);
     }
-  }, [newMessage, pendingFile, user, recipientId, conversationId, senderName]);
+  }, [newMessage, pendingFile, user, recipientId, conversationId, senderName, localTyping]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -828,6 +869,9 @@ const ChatDialog = ({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md h-[100dvh] sm:h-[640px] flex flex-col p-0 gap-0 overflow-hidden sm:rounded-2xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Чат</DialogTitle>
+          </DialogHeader>
           {/* Header */}
           <DialogHeader className="px-4 py-2.5 bg-[#f0f2f5] dark:bg-[#202c33] flex-row items-center justify-between space-y-0 shrink-0 shadow-sm z-10 border-b border-border/10">
             <div className="flex items-center gap-3 min-w-0">
@@ -1342,8 +1386,11 @@ const ChatDialog = ({
       />
 
       {/* Image lightbox */}
-      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+      <Dialog open={!!lightbox} onOpenChange={(o) => o === false && setLightbox(null)}>
         <DialogContent className="max-w-3xl p-0 bg-transparent border-0 shadow-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Просмотр изображения</DialogTitle>
+          </DialogHeader>
           {lightbox && (
             <img
               src={lightbox}
@@ -1356,6 +1403,9 @@ const ChatDialog = ({
 
       <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
         <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить сообщение?</AlertDialogTitle>
+          </AlertDialogHeader>
           <AlertDialogHeader>
             <AlertDialogTitle>Очистить чат</AlertDialogTitle>
             <AlertDialogDescription>

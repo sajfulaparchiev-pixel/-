@@ -169,21 +169,29 @@ const UserProfilePage = () => {
                       to={`/user/${r.author_id}`}
                       className="block bg-card rounded-xl border border-border/50 p-4 hover:border-primary/50 transition-colors"
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="font-medium text-foreground">{r.author_name}</span>
-                        <div className="flex items-center gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${i < r.rating ? "text-accent fill-accent" : "text-muted"}`}
-                            />
-                          ))}
+                      <div className="flex items-start gap-3">
+                        <UserAvatar 
+                          userInitials={r.author_name.slice(0, 2).toUpperCase()}
+                          size="h-10 w-10"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-foreground">{r.author_name}</span>
+                            <div className="flex items-center gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${i < r.rating ? "text-accent fill-accent" : "text-muted"}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          {r.text && <p className="text-foreground text-sm">{r.text}</p>}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {new Date(r.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+                          </p>
                         </div>
                       </div>
-                      {r.text && <p className="text-foreground text-sm">{r.text}</p>}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(r.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
-                      </p>
                     </Link>
                   ))}
                 </div>

@@ -35,7 +35,7 @@ const Search = () => {
       res = [...res].sort((a, b) => b.user.sessionsCount - a.user.sessionsCount);
     }
     return res;
-  }, [query, category, sortBy, searchSkills, skills]);
+  }, [query, category, sortBy, searchSkills]);
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">

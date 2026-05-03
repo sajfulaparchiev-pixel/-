@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ const Auth = () => {
     surname: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
   // Redirect if already authenticated
@@ -87,6 +88,14 @@ const Auth = () => {
           }
         }
 
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error("Пароли не совпадают");
+        }
+
+        if (formData.password.length < 6) {
+          throw new Error("Пароль должен быть не менее 6 символов");
+        }
+
         if (selectedSkills.length === 0) {
           throw new Error("Выберите хотя бы один интерес");
         }
@@ -107,7 +116,7 @@ const Auth = () => {
         });
         
         // Success: switch to login mode and clear password
-        setFormData(prev => ({ ...prev, password: "" }));
+        setFormData(prev => ({ ...prev, password: "", confirmPassword: "" }));
         setMode("login");
       } else {
         const { error } = await signIn(formData.email.trim(), formData.password);
@@ -279,6 +288,27 @@ const Auth = () => {
                    </button>
                  </div>
                </div>
+
+               {mode === "signup" && (
+                 <div className="space-y-2">
+                   <Label htmlFor="confirmPassword">Повторите пароль</Label>
+                   <div className="relative">
+                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                     <Input
+                       id="confirmPassword"
+                       type={showPassword ? "text" : "password"}
+                       placeholder="••••••••"
+                       value={formData.confirmPassword}
+                       onChange={(e) =>
+                         setFormData({ ...formData, confirmPassword: e.target.value })
+                       }
+                       className="pl-10 h-12"
+                       required
+                       disabled={isInputDisabled}
+                     />
+                   </div>
+                 </div>
+               )}
  
                {mode === "signup" && (
                  <div className="space-y-3">

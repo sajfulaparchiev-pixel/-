@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { Skill } from "@/components/skills/SkillCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,28 +20,21 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchSkills = async () => {
+  const fetchSkills = useCallback(async (retryCount = 0) => {
     setLoading(true);
     
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("Timeout")), 20000)
-    );
-
     try {
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from("skills")
         .select("*")
         .order("created_at", { ascending: false });
 
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-      const response = result as { data: any[] | null; error: any };
-
-      if (response.error) {
-        throw response.error;
+      if (error) {
+        throw error;
       }
 
-      if (response.data) {
-        const mapped: Skill[] = response.data.map((s: any) => ({
+      if (data) {
+        const mapped: Skill[] = data.map((s: any) => ({
           id: s.id,
           title: s.title,
           description: s.description,
@@ -54,25 +47,36 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
           user: {
             name: s.user_name || "Пользователь",
             avatar: s.user_avatar || undefined,
-            rating: 0, // In real app, would be joined from user profiles
+            rating: 0,
             sessionsCount: 0,
           },
         }));
         setSkills(mapped);
       }
     } catch (err: any) {
-      console.error("Skills fetch error:", err);
-      if (err.message !== "Timeout") {
-        toast.error("Не удалось загрузить навыки. Проверьте соединение.");
+      const isAbortError = err.name === 'AbortError' || 
+                           err.message?.includes('aborted') || 
+                           err.message?.includes('signal is aborted');
+      
+      if (isAbortError) {
+        return;
+      }
+
+      console.error(`Skills fetch error (attempt ${retryCount + 1}):`, err);
+      if (retryCount < 2) {
+        // Wait 2 seconds before retry
+        setTimeout(() => fetchSkills(retryCount + 1), 2000);
+      } else {
+        toast.error("Не удалось загрузить навыки. Попробуйте обновить страницу.");
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSkills();
-  }, []);
+  }, [fetchSkills]);
 
   const addSkill = async (skillData: Omit<Skill, "id" | "user">) => {
     if (!user) return;

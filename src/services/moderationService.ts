@@ -88,13 +88,25 @@ export const validateName = (name: string): { isValid: boolean; error?: string }
 
   const lowerName = name.toLowerCase();
   
-  // Check for profanity in name
+  // Check for profanity in name - more carefully to avoid false positives in long names
   for (const pattern of BAD_WORDS_RU) {
-    if (lowerName.includes(pattern)) {
-      return { 
-        isValid: false, 
-        error: "Имя содержит недопустимые выражения. Пожалуйста, используйте реальное имя." 
-      };
+    const regex = new RegExp(`\\b${pattern}\\b|${pattern}`, 'i'); 
+    // Actually, for very short patterns, only match if it's a separate word or at start/end
+    if (pattern.length <= 3) {
+      const strictRegex = new RegExp(`(^|\\s)${pattern}|${pattern}(\\s|$)`, 'i');
+      if (strictRegex.test(lowerName)) {
+        return { 
+          isValid: false, 
+          error: "Имя содержит недопустимые выражения." 
+        };
+      }
+    } else {
+      if (lowerName.includes(pattern)) {
+        return { 
+          isValid: false, 
+          error: "Имя содержит недопустимые выражения." 
+        };
+      }
     }
   }
 

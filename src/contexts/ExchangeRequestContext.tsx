@@ -113,6 +113,7 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
       <Dialog open={!!incomingRequest} onOpenChange={(open) => !open && handleDecline()}>
         <DialogContent className="sm:max-w-md rounded-3xl p-6 border-none shadow-2xl">
           <DialogHeader className="items-center text-center pb-2">
+            <DialogTitle>Входящий запрос на обмен</DialogTitle>
              <div className="mb-4 relative">
                 <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping opacity-20" />
                 <UserAvatar 
