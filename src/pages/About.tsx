@@ -12,58 +12,34 @@ import {
 } from "lucide-react";
 import FlowIcon from "@/components/ui/FlowIcon";
 
-const values = [
-  {
-    icon: Heart,
-    title: "Открытость",
-    description: "Мы верим, что знания должны быть доступны каждому. Skillflow — это платформа без финансовых барьеров."
-  },
-  {
-    icon: Users,
-    title: "Сообщество",
-    description: "Мы строим пространство, где люди помогают друг другу расти и развиваться через взаимный обмен."
-  },
-  {
-    icon: Target,
-    title: "Практичность",
-    description: "Учёба через практику и реальное общение эффективнее любых теоретических курсов."
-  },
-  {
-    icon: Lightbulb,
-    title: "Развитие",
-    description: "Каждый человек — одновременно ученик и учитель. Делясь знаниями, мы сами становимся лучше."
-  }
-];
-
-const team = [
-  {
-    name: "Парчиев Сайфула",
-    role: "Технический лидер",
-    bio: "Отвечает за архитектуру и техническое развитие платформы.",
-    avatar: "ПС"
-  },
-  {
-    name: "Парижев Муслим",
-    role: "Стратегия и Партнёрство",
-    bio: "Развивает стратегические направления и партнёрские отношения.",
-    avatar: "ПМ"
-  },
-  {
-    name: "Ганижев Ислам",
-    role: "Маркетинг и Коммуникации",
-    bio: "Продвигает платформу и выстраивает коммуникацию с аудиторией.",
-    avatar: "ГИ"
-  },
-  {
-    name: "Нальгиев Магомед",
-    role: "Аналитика и UX",
-    bio: "Анализирует данные и создаёт удобный пользовательский опыт.",
-    avatar: "НМ"
-  }
-];
-
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const About = () => {
+  const { t } = useLanguage();
+
+  const values = [
+    {
+      icon: Heart,
+      title: t("openness"),
+      description: t("opennessDesc")
+    },
+    {
+      icon: Users,
+      title: t("community"),
+      description: t("communityAboutDesc")
+    },
+    {
+      icon: Target,
+      title: t("practicality"),
+      description: t("practicalityDesc")
+    },
+    {
+      icon: Lightbulb,
+      title: t("development"),
+      description: t("developmentDesc")
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -78,14 +54,13 @@ const About = () => {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
               <Heart className="w-4 h-4" />
-              Наша история
+              {t("ourHistory")}
             </span>
             <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
-              О <span className="text-gradient">Skillflow</span>
+              {t("aboutUs")} <span className="text-gradient">Skillflow</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              Мы создаём пространство, где люди свободно обмениваются знаниями и навыками, 
-              помогая друг другу расти без финансовых барьеров.
+              {t("aboutDescription")}
             </p>
           </motion.div>
         </div>
@@ -101,22 +76,14 @@ const About = () => {
               viewport={{ once: true }}
             >
               <h2 className="text-3xl font-bold text-foreground mb-6">
-                Наша миссия
+                {t("mission")}
               </h2>
               <div className="space-y-4 text-lg text-muted-foreground">
                 <p>
-                  <strong className="text-foreground">Skillflow</strong> появился из простой идеи: 
-                  у каждого человека есть знания и навыки, которыми он может поделиться, 
-                  и есть то, чему он хочет научиться.
+                  <strong className="text-foreground">Skillflow</strong> {t("aboutIntro")}
                 </p>
                 <p>
-                  Мы соединяем этих людей, создавая экосистему взаимного обучения. 
-                  Здесь программист может научить кодить в обмен на уроки игры на гитаре, 
-                  а повар — поделиться рецептами за уроки английского.
-                </p>
-                <p>
-                  Наша цель — сделать образование доступным, практичным и основанным на 
-                  живом человеческом общении.
+                  {t("missionText")}
                 </p>
               </div>
             </motion.div>
@@ -131,19 +98,19 @@ const About = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-secondary/50 rounded-xl p-4">
                     <p className="text-2xl font-bold text-foreground">10K+</p>
-                    <p className="text-sm text-muted-foreground">пользователей</p>
+                    <p className="text-sm text-muted-foreground">{t("usersStatus") || t("users")}</p>
                   </div>
                   <div className="bg-secondary/50 rounded-xl p-4">
                     <p className="text-2xl font-bold text-foreground">500+</p>
-                    <p className="text-sm text-muted-foreground">навыков</p>
+                    <p className="text-sm text-muted-foreground">{t("skillsStatus") || t("skills")}</p>
                   </div>
                   <div className="bg-secondary/50 rounded-xl p-4">
                     <p className="text-2xl font-bold text-foreground">50K+</p>
-                    <p className="text-sm text-muted-foreground">сессий</p>
+                    <p className="text-sm text-muted-foreground">{t("sessionsStatus") || t("sessions")}</p>
                   </div>
                   <div className="bg-secondary/50 rounded-xl p-4">
                     <p className="text-2xl font-bold text-foreground">4.9</p>
-                    <p className="text-sm text-muted-foreground">рейтинг</p>
+                    <p className="text-sm text-muted-foreground">{t("ratingStatus") || t("rating")}</p>
                   </div>
                 </div>
               </div>
@@ -162,10 +129,10 @@ const About = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl font-bold text-foreground mb-4">
-              Наши ценности
+              {t("ourValues")}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Принципы, которые направляют нас в создании лучшей платформы для обмена знаниями
+              {t("principlesTitle")}
             </p>
           </motion.div>
 
@@ -204,24 +171,24 @@ const About = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl font-bold text-foreground mb-4">
-              Свяжитесь с нами
+              {t("contactUs")}
             </h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              Есть вопросы, предложения или хотите сотрудничать? Мы всегда рады обратной связи.
+              {t("contactText")}
             </p>
           </motion.div>
-
+ 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="hero" size="lg" className="rounded-2xl h-14 px-8 font-bold shadow-lg shadow-primary/20" asChild>
               <a href="mailto:saifulkjh63@gmail.com">
                 <Mail className="w-5 h-5 mr-2" />
-                Написать нам
+                {t("writeToUs")}
               </a>
             </Button>
             <Button variant="outline" size="lg" className="rounded-2xl h-14 px-8 font-bold" asChild>
               <a href="https://t.me/+MfafzZ912WtiYzM6" target="_blank" rel="noopener noreferrer">
                 <MessageCircle className="w-5 h-5 mr-2" />
-                Telegram-чат
+                {t("telegramChat")}
               </a>
             </Button>
           </div>
@@ -239,7 +206,7 @@ const About = () => {
               <span className="font-bold text-foreground">Skillflow</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2026 Skillflow. Все права защищены.
+              © 2026 Skillflow. {t("allRightsReserved")}
             </p>
           </div>
         </div>

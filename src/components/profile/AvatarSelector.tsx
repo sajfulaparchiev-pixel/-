@@ -53,7 +53,7 @@ interface AvatarCropperProps {
   onCancel: () => void;
 }
 
-const AvatarCropper = ({ imageSrc, onCrop, onCancel }: AvatarCropperProps) => {
+const AvatarCropper = ({ imageSrc, onCrop, onCancel, t }: AvatarCropperProps & { t?: any }) => {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0.5, y: 0.5 }); // Normalized 0-1
   const [isDragging, setIsDragging] = useState(false);
@@ -151,18 +151,18 @@ const AvatarCropper = ({ imageSrc, onCrop, onCancel }: AvatarCropperProps) => {
         </div>
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Move className="w-3 h-3" />
-          <span>Перетаскивайте фото для выравнивания</span>
+          <span>{t("dragToAlign")}</span>
         </div>
       </div>
 
       <div className="flex gap-3 w-full">
         <Button variant="outline" className="flex-1" onClick={onCancel}>
           <X className="w-4 h-4 mr-2" />
-          Отмена
+          {t("cancel")}
         </Button>
         <Button className="flex-1" onClick={handleConfirm}>
           <Check className="w-4 h-4 mr-2" />
-          Готово
+          {t("done")}
         </Button>
       </div>
     </div>
@@ -195,7 +195,11 @@ const AvatarSelector = ({ currentAvatar, userInitials, onSelect }: AvatarSelecto
     if (!file) return;
 
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      toast({ title: t("error"), description: `Файл слишком большой (макс. ${MAX_FILE_MB}МБ)`, variant: "destructive" });
+      toast({ 
+        title: t("error"), 
+        description: t("fileTooLarge").replace("{size}", MAX_FILE_MB.toString()), 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -246,7 +250,7 @@ const AvatarSelector = ({ currentAvatar, userInitials, onSelect }: AvatarSelecto
       <DialogContent className={cn("w-[95vw] sm:max-w-md transition-all duration-300 max-h-[95vh] overflow-y-auto rounded-3xl", cropImage ? "sm:max-w-sm" : "sm:max-w-md")}>
         <DialogHeader>
           <DialogTitle>
-            {cropImage ? "Настройка фото" : t("chooseAvatar")}
+            {cropImage ? t("photoSetup") : t("chooseAvatar")}
           </DialogTitle>
         </DialogHeader>
 
@@ -255,6 +259,7 @@ const AvatarSelector = ({ currentAvatar, userInitials, onSelect }: AvatarSelecto
             imageSrc={cropImage} 
             onCrop={handleCropConfirm} 
             onCancel={() => setCropImage(null)} 
+            t={t}
           />
         ) : (
           <div className="space-y-6 py-4">
@@ -278,17 +283,17 @@ const AvatarSelector = ({ currentAvatar, userInitials, onSelect }: AvatarSelecto
                 ) : (
                   <Upload className="w-4 h-4" />
                 )}
-                Выбрать свое фото
+                {t("chooseCustomPhoto")}
               </Button>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">
-                JPG, PNG, WEBP ДО {MAX_FILE_MB}МБ
+                {t("fileLimitInfo").replace("{formats}", "JPG, PNG, WEBP").replace("{size}", MAX_FILE_MB.toString())}
               </p>
             </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50" /></div>
               <div className="relative flex justify-center text-xs uppercase px-2">
-                <span className="bg-background px-3 text-muted-foreground font-bold italic tracking-tighter text-center">или выберите персонажа</span>
+                <span className="bg-background px-3 text-muted-foreground font-bold italic tracking-tighter text-center">{t("orChooseCharacter")}</span>
               </div>
             </div>
 

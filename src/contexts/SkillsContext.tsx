@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { Skill } from "@/components/skills/SkillCard";
+import AddSkillDialog from "@/components/skills/AddSkillDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getCategoryKey } from "@/utils/categories";
 
 interface SkillsContextType {
   skills: Skill[];
@@ -11,14 +13,20 @@ interface SkillsContextType {
   deleteSkill: (skillId: string) => Promise<void>;
   searchSkills: (query: string, category: string) => Skill[];
   requestExchange: (skill: Skill) => Promise<void>;
+  isAddDialogOpen: boolean;
+  setIsAddDialogOpen: (open: boolean) => void;
 }
 
 const SkillsContext = createContext<SkillsContextType | undefined>(undefined);
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export const SkillsProvider = ({ children }: { children: ReactNode }) => {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const fetchSkills = useCallback(async (retryCount = 0) => {
     setLoading(true);
@@ -34,7 +42,22 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data) {
-        const mapped: Skill[] = data.map((s: any) => ({
+        const mapped: Skill[] = data
+          .filter((s: any) => {
+            const lowTitle = (s.title || "").toLowerCase();
+            const lowDesc = (s.description || "").toLowerCase();
+            
+            // Comprehensive blocklist for unwanted content
+            // Covers: "метко срать", "елена 300 метров", etc.
+            const blockedKeywords = ["срать", "300 метров", "300 м от вас"];
+            
+            const isBlocked = blockedKeywords.some(keyword => 
+              lowTitle.includes(keyword) || lowDesc.includes(keyword)
+            );
+
+            return !isBlocked;
+          })
+          .map((s: any) => ({
           id: s.id,
           title: s.title,
           description: s.description,
@@ -45,10 +68,10 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
           wantedSkills: s.wanted_skills || [],
           userId: s.user_id,
           user: {
-            name: s.user_name || "Пользователь",
+            name: s.user_name || t("user"),
             avatar: s.user_avatar || undefined,
             rating: 0,
-            sessionsCount: 0,
+            sessionsCount: 0
           },
         }));
         setSkills(mapped);
@@ -67,22 +90,30 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
         // Wait 2 seconds before retry
         setTimeout(() => fetchSkills(retryCount + 1), 2000);
       } else {
-        toast.error("Не удалось загрузить навыки. Попробуйте обновить страницу.");
+        toast.error(t("skillsLoadError"));
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchSkills();
+    
+    const handleProfileUpdate = () => {
+      fetchSkills();
+    };
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+    };
   }, [fetchSkills]);
 
   const addSkill = async (skillData: Omit<Skill, "id" | "user">) => {
     if (!user) return;
 
     const metadata = user.user_metadata;
-    const name = metadata?.name || "Аноним";
+    const name = metadata?.name || t("anonymous");
     const surname = metadata?.surname || "";
     const displayName = surname ? `${name} ${surname.charAt(0)}.` : name;
 
@@ -96,13 +127,13 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
       category: skillData.category,
       wanted_skills: skillData.wantedSkills || [],
       user_name: displayName,
-      user_avatar: metadata?.avatar_id || null,
+      user_avatar: metadata?.avatar_id || null
     });
 
     if (error) {
       console.error("Error adding skill:", error);
-      toast.error("Ошибка при добавлении навыка");
-      return;
+      toast.error(t("skillAddError") + " " + JSON.stringify(error));
+      throw error;
     }
 
     await fetchSkills();
@@ -119,19 +150,19 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       console.error("Error deleting skill:", error);
-      toast.error("Ошибка при удалении навыка");
+      toast.error(t("skillDeleteError"));
       return;
     }
 
     setSkills((prev) => prev.filter((s) => s.id !== skillId));
-    toast.success("Навык удалён");
+    toast.success(t("skillDeleteSuccess"));
   };
 
   const requestExchange = async (skill: Skill) => {
     if (!user) return;
 
     const metadata = user.user_metadata;
-    const name = metadata?.name || "Кто-то";
+    const name = metadata?.name || t("someone");
     const surname = metadata?.surname || "";
     const fromName = surname ? `${name} ${surname.charAt(0)}.` : name;
 
@@ -144,7 +175,7 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
     if (!skillData) return;
 
     if (skillData.user_id === user.id) {
-      toast.error("Нельзя предложить обмен самому себе");
+      toast.error(t("selfExchangeError"));
       return;
     }
 
@@ -159,7 +190,7 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
       .maybeSingle();
 
     if (existing) {
-      toast.info("Запрос уже отправлен — ждите ответа");
+      toast.info(t("exchangeAlreadySent"));
       return;
     }
 
@@ -179,7 +210,7 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       console.error("Error creating exchange:", error);
-      toast.error("Ошибка при отправке запроса");
+      toast.error(t("exchangeSendError"));
       return;
     }
 
@@ -187,8 +218,8 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
     await supabase.from("notifications").insert({
       user_id: skillData.user_id,
       type: "exchange_request",
-      title: "Запрос на обмен навыками",
-      message: `${fromName} хочет обменяться навыком «${skill.title}». Откройте страницу «Сессии», чтобы ответить.`,
+      title: t("exchangeRequestTitle"),
+      message: t("exchangeRequestMsg").replace("{name}", fromName).replace("{title}", skill.title),
       from_user_name: fromName,
       related_skill_id: skill.id,
     });
@@ -200,8 +231,8 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: skillData.user_id,
-          title: "Запрос на обмен",
-          body: `${fromName} хочет обменяться навыком «${skill.title}»`,
+          title: t("exchangeRequestNotificationTitle"),
+          body: t("exchangeRequestNotificationBody").replace("{name}", fromName).replace("{title}", skill.title),
           url: "/sessions",
         }),
       });
@@ -209,7 +240,7 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
       console.log("Push not sent:", e);
     }
 
-    toast.success("Запрос на обмен отправлен!");
+    toast.success(t("exchangeRequestSent"));
     return;
   };
 
@@ -218,20 +249,31 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
       const qText = query.toLowerCase().trim();
       const qs = qText.split(/\s+/).filter(Boolean);
       
-      const searchStr = `${skill.title} ${skill.description} ${skill.category} ${skill.user?.name || ""} ${(skill.wantedSkills || []).join(" ")}`.toLowerCase();
+      const searchStr = `${skill.title} ${skill.description} ${skill.category} ${t(`categories.${getCategoryKey(skill.category)}` as any)} ${skill.user?.name || ""} ${(skill.wantedSkills || []).join(" ")}`.toLowerCase();
 
       const matchesQuery = qs.length === 0 || qs.every(q => searchStr.includes(q));
 
-      const matchesCategory =
-        category === "Все" || category === "" || skill.category === category;
+      const isAll = !category || category === "all";
+
+      const matchesCategory = isAll || getCategoryKey(skill.category) === category;
 
       return matchesQuery && matchesCategory;
     });
   };
 
   return (
-    <SkillsContext.Provider value={{ skills, loading, addSkill, deleteSkill, searchSkills, requestExchange }}>
+    <SkillsContext.Provider value={{ 
+      skills, 
+      loading, 
+      addSkill, 
+      deleteSkill, 
+      searchSkills, 
+      requestExchange,
+      isAddDialogOpen,
+      setIsAddDialogOpen
+    }}>
       {children}
+      <AddSkillDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
     </SkillsContext.Provider>
   );
 };

@@ -12,11 +12,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Feed = () => {
-  const { searchSkills, loading } = useSkills();
+  const { searchSkills, loading, setIsAddDialogOpen } = useSkills();
   const { user } = useAuth();
   const { t } = useLanguage();
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("Все");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
   let filteredSkills = searchSkills(searchQuery, activeCategory);
@@ -45,11 +46,13 @@ const Feed = () => {
                 {t("findWhatToLearn")}
               </p>
             </div>
-            <Button variant="hero" className="hidden md:flex" asChild>
-              <Link to="/add-skill">
-                <Plus className="w-5 h-5" />
-                {t("addSkill")}
-              </Link>
+            <Button 
+              variant="hero" 
+              className="hidden md:flex" 
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              <Plus className="w-5 h-5" />
+              {t("addSkill")}
             </Button>
           </div>
           
@@ -93,7 +96,7 @@ const Feed = () => {
                     className="mt-4"
                     onClick={() => window.location.reload()}
                   >
-                    Обновить страницу
+                    {t("refreshPage")}
                   </Button>
                 </motion.div>
               )}

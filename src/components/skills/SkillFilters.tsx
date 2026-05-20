@@ -23,9 +23,11 @@ interface SkillFiltersProps {
   category?: string;
 }
 
+import { CATEGORY_KEYS } from "@/utils/categories";
+
 const SkillFilters = ({ onSearch, onCategoryChange, onSortChange, query, category }: SkillFiltersProps) => {
-  const { t } = useLanguage();
-  const [activeCategory, setActiveCategory] = useState(category || "Все");
+  const { t, language } = useLanguage();
+  const [activeCategory, setActiveCategory] = useState(category || "all");
   const [searchQuery, setSearchQuery] = useState(query || "");
   const [sortBy, setSortBy] = useState("newest");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -36,30 +38,10 @@ const SkillFilters = ({ onSearch, onCategoryChange, onSortChange, query, categor
 
   useEffect(() => {
     if (category !== undefined) setActiveCategory(category);
+    else setActiveCategory("all");
   }, [category]);
 
-  const categories = [
-    "Все",
-    "Программирование",
-    "Дизайн",
-    "Музыка",
-    "Языки",
-    "Фитнес",
-    "Фотография",
-    "Маркетинг",
-    "Бизнес",
-    "Искусство",
-    "Кулинария",
-    "Спорт",
-    "Танцы",
-    "Видеомонтаж",
-    "Письмо и копирайтинг",
-    "Психология",
-    "Финансы",
-    "Наука и образование",
-    "Ремёсла",
-    "Другое",
-  ];
+  const categories = ["all", ...CATEGORY_KEYS];
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -120,7 +102,7 @@ const SkillFilters = ({ onSearch, onCategoryChange, onSortChange, query, categor
             </SheetHeader>
             <div className="space-y-6 mt-6">
               <div className="space-y-3">
-              <Label className="text-base font-medium">Сортировка</Label>
+              <Label className="text-base font-medium">{t("sortBy")}</Label>
                 <RadioGroup 
                   value={sortBy} 
                   onValueChange={(val) => {
@@ -131,15 +113,15 @@ const SkillFilters = ({ onSearch, onCategoryChange, onSortChange, query, categor
                 >
                   <Label htmlFor="sort-newest" className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-secondary/50">
                     <RadioGroupItem value="newest" id="sort-newest" />
-                    <span>Сначала новые</span>
+                    <span>{t("newest")}</span>
                   </Label>
                   <Label htmlFor="sort-popular" className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-secondary/50">
                     <RadioGroupItem value="popular" id="sort-popular" />
-                    <span>Самые популярные</span>
+                    <span>{t("popular")}</span>
                   </Label>
                   <Label htmlFor="sort-rating" className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-secondary/50">
                     <RadioGroupItem value="rating" id="sort-rating" />
-                    <span>По рейтингу</span>
+                    <span>{t("rating")}</span>
                   </Label>
                 </RadioGroup>
               </div>
@@ -167,7 +149,7 @@ const SkillFilters = ({ onSearch, onCategoryChange, onSortChange, query, categor
             }`}
             onClick={() => handleCategoryClick(category)}
           >
-            {category}
+            {category === "all" ? t("all") : t(`categories.${category}` as any)}
           </Badge>
         ))}
       </motion.div>

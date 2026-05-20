@@ -10,6 +10,8 @@ import {
 import { toast } from "sonner";
 import { useCall } from "@/contexts/CallContext";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 interface VideoCallDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -19,11 +21,12 @@ interface VideoCallDialogProps {
 }
 
 const VideoCallDialog = ({ open, onOpenChange, partnerName, skillTitle, partnerId }: VideoCallDialogProps) => {
+  const { t } = useLanguage();
   const callContext = useCall();
 
   const startCall = (withVideo: boolean) => {
     if (!partnerId) {
-      toast.error("Невозможно позвонить: отсутствуют данные собеседника");
+      toast.error(t("callUnavailable"));
       return;
     }
     onOpenChange(false);
@@ -34,9 +37,9 @@ const VideoCallDialog = ({ open, onOpenChange, partnerName, skillTitle, partnerI
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Позвонить пользователю {partnerName}</DialogTitle>
+          <DialogTitle>{t("callUserTitle").replace("{name}", partnerName)}</DialogTitle>
           <DialogDescription>
-            Выберите тип звонка для обсуждения «{skillTitle}». Звонок будет выполнен прямо в приложении.
+            {t("callTypeDesc").replace("{title}", skillTitle)}
           </DialogDescription>
         </DialogHeader>
 
@@ -44,11 +47,11 @@ const VideoCallDialog = ({ open, onOpenChange, partnerName, skillTitle, partnerI
           <div className="flex flex-col sm:flex-row gap-3">
             <Button variant="outline" className="flex-1 gap-2 py-6 text-base rounded-2xl" onClick={() => startCall(false)}>
               <Phone className="w-5 h-5" />
-              Аудиозвонок
+              {t("audioCall")}
             </Button>
             <Button variant="hero" className="flex-1 gap-2 py-6 text-base rounded-2xl" onClick={() => startCall(true)}>
               <Video className="w-5 h-5" />
-              Видеозвонок
+              {t("videoCall")}
             </Button>
           </div>
         </div>

@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User, LogOut, Settings, Calendar } from "lucide-react";
+import { Menu, X, User, LogOut, Settings, Calendar, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -55,7 +55,8 @@ const Header = () => {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
-              <NotificationBell />
+                <NotificationBell />
+                <Button variant="ghost" asChild className="hidden md:inline-flex"><Link to="/chats"><MessageCircle className="w-5 h-5 mr-2" />{t("messages") || "Chats"}</Link></Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
@@ -68,6 +69,9 @@ const Header = () => {
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/chats" className="cursor-pointer"><MessageCircle className="mr-2 h-4 w-4" />{t("messages") || "Chats"}</Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="cursor-pointer"><User className="mr-2 h-4 w-4" />{t("profile")}</Link>
                   </DropdownMenuItem>
@@ -86,16 +90,23 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Button variant="ghost" asChild><Link to="/auth">{t("signIn")}</Link></Button>
+                <Button variant="ghost" asChild><Link to="/auth?mode=login">{t("signIn")}</Link></Button>
                 <Button variant="hero" asChild><Link to="/auth?mode=signup">{t("start")}</Link></Button>
               </>
             )}
           </div>
 
           {user && (
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-foreground">
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            <div className="md:hidden flex items-center gap-2">
+              <Button variant="ghost" size="icon" asChild className="relative">
+                <Link to="/chats">
+                  <MessageCircle className="w-6 h-6" />
+                </Link>
+              </Button>
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-foreground">
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           )}
         </div>
 
@@ -121,6 +132,9 @@ const Header = () => {
                       </div>
                     </div>
                     <Button variant="ghost" asChild className="justify-start">
+                      <Link to="/chats" onClick={() => setMobileMenuOpen(false)}><MessageCircle className="mr-2 h-4 w-4" />{t("messages") || "Chats"}</Link>
+                    </Button>
+                    <Button variant="ghost" asChild className="justify-start">
                       <Link to="/profile" onClick={() => setMobileMenuOpen(false)}><User className="mr-2 h-4 w-4" />{t("profile")}</Link>
                     </Button>
                     <Button variant="ghost" className="justify-start text-destructive" onClick={() => { signOut(); setMobileMenuOpen(false); }}>
@@ -129,7 +143,7 @@ const Header = () => {
                   </>
                 ) : (
                   <>
-                    <Button variant="ghost" asChild className="justify-start"><Link to="/auth" onClick={() => setMobileMenuOpen(false)}>{t("signIn")}</Link></Button>
+                    <Button variant="ghost" asChild className="justify-start"><Link to="/auth?mode=login" onClick={() => setMobileMenuOpen(false)}>{t("signIn")}</Link></Button>
                     <Button variant="hero" asChild><Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>{t("start")}</Link></Button>
                   </>
                 )}

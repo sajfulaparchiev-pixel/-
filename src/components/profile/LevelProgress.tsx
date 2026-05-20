@@ -1,17 +1,20 @@
 import { Progress } from "@/components/ui/progress";
 import { Trophy } from "lucide-react";
-
-const levels = [
-  { name: "Начинающий", min: 0, max: 20, color: "text-skill-beginner" },
-  { name: "Средний", min: 20, max: 50, color: "text-skill-intermediate" },
-  { name: "Эксперт", min: 50, max: Infinity, color: "text-skill-expert" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LevelProgressProps {
   sessionsCount: number;
 }
 
 const LevelProgress = ({ sessionsCount }: LevelProgressProps) => {
+  const { t } = useLanguage();
+
+  const levels = [
+    { name: t("beginner"), key: "beginner", min: 0, max: 20, color: "text-skill-beginner" },
+    { name: t("intermediate"), key: "intermediate", min: 20, max: 50, color: "text-skill-intermediate" },
+    { name: t("expert"), key: "expert", min: 50, max: Infinity, color: "text-skill-expert" },
+  ];
+
   const currentLevel = levels.find(
     (l) => sessionsCount >= l.min && sessionsCount < l.max
   ) || levels[levels.length - 1];
@@ -31,7 +34,10 @@ const LevelProgress = ({ sessionsCount }: LevelProgressProps) => {
         </div>
         {nextLevel && (
           <span className="text-muted-foreground">
-            {sessionsCount}/{nextLevel.min} до «{nextLevel.name}»
+            {t("untilNextLevel")
+              .replace("{current}", sessionsCount.toString())
+              .replace("{next}", nextLevel.min.toString())
+              .replace("{level}", nextLevel.name)}
           </span>
         )}
       </div>

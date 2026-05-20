@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import UserAvatar from "@/components/profile/UserAvatar";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 interface ExchangeRequest {
   id: string;
   fromUserId: string;
@@ -31,6 +33,7 @@ export const useExchangeRequest = () => {
 
 export const ExchangeRequestProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [incomingRequest, setIncomingRequest] = useState<ExchangeRequest | null>(null);
 
@@ -44,12 +47,12 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
     });
 
     channel.on("broadcast", { event: "exchange-accepted" }, (payload) => {
-      toast.success(`${payload.payload.fromUserName} принял ваш запрос на обмен!`);
+      toast.success(t("exchangeAcceptedToast").replace("{name}", payload.payload.fromUserName));
       navigate(`/user/${payload.payload.fromUserId}`);
     });
 
     channel.on("broadcast", { event: "exchange-declined" }, () => {
-      toast.error("Запрос на обмен отклонен");
+      toast.error(t("exchangeRejectedToast"));
     });
 
     channel.subscribe();
@@ -57,7 +60,7 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, navigate]);
+  }, [user, navigate, t]);
 
   const sendLiveRequest = (request: ExchangeRequest) => {
     // We target the recipient's channel
@@ -68,14 +71,14 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
         ...request,
         id: user?.id, // Our ID for their list
       }
-    });
+    }).catch(() => {});
   };
 
   const handleAccept = async () => {
     if (!incomingRequest || !user) return;
 
     try {
-      toast.success("Обмен принят!");
+      toast.success(t("exchangeAcceptedSuccess"));
       const targetId = incomingRequest.fromUserId;
       setIncomingRequest(null);
       
@@ -83,13 +86,13 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
       supabase.channel(`user-exchange-requests-${targetId}`).send({
         type: "broadcast",
         event: "exchange-accepted",
-        payload: { fromUserId: user.id, fromUserName: user.user_metadata?.name || "Пользователь" }
-      });
+        payload: { fromUserId: user.id, fromUserName: user.user_metadata?.name || t("user") }
+      }).catch(() => {});
 
       // Transfer to the profile of the person who sent it
       navigate(`/user/${targetId}`);
     } catch (error) {
-      toast.error("Ошибка при принятии обмена");
+      toast.error(t("exchangeAcceptError"));
     }
   };
 
@@ -101,7 +104,7 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
       type: "broadcast",
       event: "exchange-declined",
       payload: { fromUserId: user?.id }
-    });
+    }).catch(() => {});
     
     setIncomingRequest(null);
   };
@@ -113,7 +116,7 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
       <Dialog open={!!incomingRequest} onOpenChange={(open) => !open && handleDecline()}>
         <DialogContent className="sm:max-w-md rounded-3xl p-6 border-none shadow-2xl">
           <DialogHeader className="items-center text-center pb-2">
-            <DialogTitle>Входящий запрос на обмен</DialogTitle>
+            <DialogTitle>{t("incomingExchangeTitle")}</DialogTitle>
              <div className="mb-4 relative">
                 <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping opacity-20" />
                 <UserAvatar 
@@ -126,15 +129,15 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
                   <Phone className="w-4 h-4 text-white" />
                 </div>
              </div>
-            <DialogTitle className="text-2xl font-bold">Запрос на обмен!</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">{t("exchangeOfferTitle")}</DialogTitle>
             <DialogDescription className="text-[15px] pt-1 leading-relaxed">
-              <span className="font-bold text-foreground">{incomingRequest?.fromUserName}</span> хочет предложить вам обменяться навыком:
+              {t("exchangeOfferWants").replace("{name}", incomingRequest?.fromUserName || t("user"))}
             </DialogDescription>
           </DialogHeader>
 
           <div className="bg-secondary/40 p-4 rounded-2xl flex items-center gap-4 border border-border/50 my-4">
              <div className="flex-1">
-               <p className="text-sm text-muted-foreground mb-1 uppercase tracking-wider font-bold text-[10px]">Навык</p>
+               <p className="text-sm text-muted-foreground mb-1 uppercase tracking-wider font-bold text-[10px]">{t("skills")}</p>
                <p className="font-bold text-lg leading-tight">{incomingRequest?.skillTitle}</p>
              </div>
              <Check className="w-8 h-8 text-emerald-500 opacity-50" />
@@ -143,11 +146,11 @@ export const ExchangeRequestProvider = ({ children }: { children: React.ReactNod
           <DialogFooter className="flex-row gap-3 sm:justify-center pt-2">
             <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold" onClick={handleDecline}>
               <X className="w-4 h-4 mr-2" />
-              Отклонить
+              {t("decline")}
             </Button>
             <Button variant="hero" className="flex-1 h-12 rounded-xl font-bold shadow-lg shadow-primary/20" onClick={handleAccept}>
               <Check className="w-4 h-4 mr-2" />
-              Принять
+              {t("accept")}
             </Button>
           </DialogFooter>
         </DialogContent>

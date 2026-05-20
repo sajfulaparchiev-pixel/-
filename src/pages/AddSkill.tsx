@@ -19,38 +19,23 @@ import { ArrowLeft, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSkills } from "@/contexts/SkillsContext";
 
-const categories = [
-  "Программирование",
-  "Дизайн",
-  "Музыка",
-  "Языки",
-  "Фитнес",
-  "Фотография",
-  "Маркетинг",
-  "Бизнес",
-  "Искусство",
-  "Кулинария",
-  "Спорт",
-  "Танцы",
-  "Видеомонтаж",
-  "Письмо и копирайтинг",
-  "Психология",
-  "Финансы",
-  "Наука и образование",
-  "Ремёсла",
-  "Другое",
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const MAX_DESC_WORDS = 350;
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+const MAX_DESC_WORDS = 350;
 
 import { validateContent } from "@/services/moderationService";
 
+import { CATEGORY_KEYS } from "@/utils/categories";
+
 const AddSkill = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addSkill } = useSkills();
   const [submitting, setSubmitting] = useState(false);
+
+  const categoriesList = CATEGORY_KEYS;
 
   const [formData, setFormData] = useState({
     title: "",
@@ -83,41 +68,41 @@ const AddSkill = () => {
 
     // Validation
     if (!formData.title.trim()) {
-      toast({ title: "Заполните название", variant: "destructive" });
+      toast({ title: t("fillTitle"), variant: "destructive" });
       return;
     }
     if (!formData.description.trim()) {
-      toast({ title: "Добавьте описание", variant: "destructive" });
+      toast({ title: t("fillDesc"), variant: "destructive" });
       return;
     }
     if (wordsOver) {
-      toast({ title: "Описание слишком длинное", description: `Максимум ${MAX_DESC_WORDS} слов`, variant: "destructive" });
+      toast({ title: t("descTooLong"), description: t("maxWords").replace("{n}", MAX_DESC_WORDS.toString()), variant: "destructive" });
       return;
     }
 
     // AI/Content Moderation
     const titleVal = validateContent(formData.title);
     if (!titleVal.isValid) {
-      toast({ title: "Проблема с заголовком", description: titleVal.error, variant: "destructive" });
+      toast({ title: t("error"), description: t(titleVal.error as any), variant: "destructive" });
       return;
     }
 
     const descVal = validateContent(formData.description);
     if (!descVal.isValid) {
-      toast({ title: "Проблема с описанием", description: descVal.error, variant: "destructive" });
+      toast({ title: t("error"), description: t(descVal.error as any), variant: "destructive" });
       return;
     }
     if (!formData.category) {
-      toast({ title: "Выберите категорию", variant: "destructive" });
+      toast({ title: t("selectCategoryToast"), variant: "destructive" });
       return;
     }
     if (!formData.format) {
-      toast({ title: "Выберите формат занятий", variant: "destructive" });
+      toast({ title: t("selectFormatToast"), variant: "destructive" });
       return;
     }
     const duration = parseInt(formData.duration);
     if (!duration || duration < 15 || duration > 180) {
-      toast({ title: "Укажите длительность от 15 до 180 минут", variant: "destructive" });
+      toast({ title: t("setDuration"), variant: "destructive" });
       return;
     }
     // Wanted skills required
@@ -125,7 +110,7 @@ const AddSkill = () => {
     const pending = wantedSkill.trim();
     if (pending && !wanted.includes(pending)) wanted = [...wanted, pending];
     if (wanted.length === 0) {
-      toast({ title: "Укажите, что хотите взамен", description: "Это обязательное поле — добавьте хотя бы один навык", variant: "destructive" });
+      toast({ title: t("setWanted"), description: t("setWantedDesc"), variant: "destructive" });
       return;
     }
 
@@ -140,7 +125,7 @@ const AddSkill = () => {
         duration,
         wantedSkills: wanted,
       });
-      toast({ title: "Навык добавлен!", description: "Ваш навык виден в ленте сообщества" });
+      toast({ title: t("skillAddedSuccessToast"), description: t("skillAddedSuccessDesc") });
       navigate("/feed");
     } finally {
       setSubmitting(false);
@@ -166,15 +151,15 @@ const AddSkill = () => {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-8 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-medium">Назад</span>
+            <span className="font-medium">{t("back")}</span>
           </button>
 
           <div className="mb-10 text-center sm:text-left">
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 tracking-tight">
-              Поделитесь своим <span className="text-primary">мастерством</span>
+              {t("shareMastery").split(" ").slice(0, -1).join(" ")} <span className="text-primary">{t("shareMastery").split(" ").pop()}</span>
             </h1>
             <p className="text-muted-foreground text-base max-w-lg">
-              Опишите свой навык и то, что вы хотели бы получить взамен. Это начало нового обмена знаниями.
+              {t("shareMasteryDesc")}
             </p>
           </div>
 
@@ -188,15 +173,15 @@ const AddSkill = () => {
               <div className="pb-4 border-b border-border/30">
                 <h2 className="text-lg font-bold flex items-center gap-2">
                   <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">1</span>
-                  Основная информация
+                  {t("mainInfo")}
                 </h2>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Название навыка *</Label>
+                <Label htmlFor="title" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{t("skillTitleLabel")}</Label>
                 <Input
                   id="title"
-                  placeholder="Например: React и TypeScript разработка"
+                  placeholder={t("skillTitlePlaceholder")}
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="h-14 text-lg font-medium bg-secondary/30 border-transparent focus:border-primary/30 transition-all rounded-xl"
@@ -207,14 +192,14 @@ const AddSkill = () => {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="description" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Описание *</Label>
+                  <Label htmlFor="description" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{t("descriptionLabel")}</Label>
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${wordsOver ? "bg-destructive/10 text-destructive" : "bg-secondary text-muted-foreground"}`}>
-                    {descWords} / {MAX_DESC_WORDS} слов
+                    {t("wordsCount").replace("{n}", descWords.toString()).replace("{max}", "350")}
                   </span>
                 </div>
                 <Textarea
                   id="description"
-                  placeholder="Опишите, чему вы можете научить и какой у вас опыт..."
+                  placeholder={t("descriptionPlaceholder")}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className={`min-h-[160px] resize-none bg-secondary/30 border-transparent focus:border-primary/30 transition-all rounded-xl p-4 leading-relaxed ${wordsOver ? "ring-2 ring-destructive/20 border-destructive" : ""}`}
@@ -227,24 +212,24 @@ const AddSkill = () => {
               <div className="pb-4 border-b border-border/30">
                 <h2 className="text-lg font-bold flex items-center gap-2">
                   <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">2</span>
-                  Детали и формат
+                  {t("detailsAndFormat")}
                 </h2>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Категория *</Label>
+                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{t("categoryLabel")}</Label>
                   <Select
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
                   >
                     <SelectTrigger className="h-14 bg-secondary/30 border-transparent focus:border-primary/30 rounded-xl">
-                      <SelectValue placeholder="Выберите категорию" />
+                      <SelectValue placeholder={t("selectCategory")} />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px] rounded-xl">
-                      {categories.map((cat) => (
+                      {categoriesList.map((cat) => (
                         <SelectItem key={cat} value={cat} className="rounded-lg">
-                          {cat}
+                          {t(`categories.${cat}` as any)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -252,25 +237,25 @@ const AddSkill = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Формат занятий *</Label>
+                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{t("formatLabel")}</Label>
                   <Select
                     value={formData.format}
                     onValueChange={(value) => setFormData({ ...formData, format: value })}
                   >
                     <SelectTrigger className="h-14 bg-secondary/30 border-transparent focus:border-primary/30 rounded-xl">
-                      <SelectValue placeholder="Формат занятий" />
+                      <SelectValue placeholder={t("selectFormat")} />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="online">Онлайн (Видеосвязь)</SelectItem>
-                      <SelectItem value="offline">Офлайн (Личная встреча)</SelectItem>
-                      <SelectItem value="both">Любой формат</SelectItem>
+                      <SelectItem value="online">{t("onlineFormat")}</SelectItem>
+                      <SelectItem value="offline">{t("offlineFormat")}</SelectItem>
+                      <SelectItem value="both">{t("bothFormats")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2 max-w-[200px]">
-                <Label htmlFor="duration" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Длительность (мин) *</Label>
+                <Label htmlFor="duration" className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{t("durationLabel")}</Label>
                 <div className="relative">
                   <Input
                     id="duration"
@@ -283,7 +268,7 @@ const AddSkill = () => {
                     className="h-14 bg-secondary/30 border-transparent focus:border-primary/30 rounded-xl pr-12 font-medium"
                     required
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">MIN</div>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">{t("min").toUpperCase()}</div>
                 </div>
               </div>
             </div>
@@ -292,15 +277,15 @@ const AddSkill = () => {
               <div className="pb-4 border-b border-border/30">
                 <h2 className="text-lg font-bold flex items-center gap-2">
                   <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">3</span>
-                  Условия обмена
+                  {t("exchangeConditions")}
                 </h2>
               </div>
 
               <div className="space-y-4">
-                <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Что хотите изучить взамен? *</Label>
+                <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{t("wantedSkillsLabel")}</Label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Например: Дизайн интерфейсов"
+                    placeholder={t("wantedSkillsPlaceholder")}
                     value={wantedSkill}
                     onChange={(e) => setWantedSkill(e.target.value)}
                     onKeyDown={(e) => {
@@ -345,12 +330,12 @@ const AddSkill = () => {
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">
-                      Ваши пожелания появятся здесь...
+                      {t("wishesAppearHere")}
                     </p>
                   )}
                 </div>
                 <p className="text-[12px] text-muted-foreground">
-                  Укажите навыки, которые вам интересны. Это поможет другим пользователям понять, подходит ли им ваш обмен.
+                  {t("wishesDesc")}
                 </p>
               </div>
             </div>
@@ -363,7 +348,7 @@ const AddSkill = () => {
                 className="w-full h-16 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]" 
                 disabled={submitting}
               >
-                {submitting ? "Публикация..." : "Опубликовать в ленту"}
+                {submitting ? t("publishing") : t("publishToFeed")}
               </Button>
             </div>
           </form>

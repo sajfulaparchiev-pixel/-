@@ -5,7 +5,6 @@ import {
   Paperclip,
   X,
   Trash2,
-  MoreVertical,
   Check,
   CheckCheck,
   Image as ImageIcon,
@@ -27,6 +26,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { useLanguage } from "@/contexts/LanguageContext";
 import VideoCallDialog from "@/components/calls/VideoCallDialog";
 import { useIsOnline } from "@/hooks/usePresence";
 import {
@@ -81,18 +81,18 @@ interface ChatDialogProps {
 }
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
-const FALLBACK_BASE64_MAX_SIZE = 10 * 1024 * 1024; // 10 MB fallback
+const FALLBACK_BASE64_MAX_SIZE = 20 * 1024 * 1024; // 20 MB fallback
 const MAX_IMAGE_DIMENSION = 4096;
 const QUICK_EMOJI = ["👍", "❤️", "😂", "🔥", "🎉", "🙏", "👏", "😍"];
 const MAX_RECORDING_SECONDS = 120; // 2 minutes
 
 const EMOJI_CATEGORIES: Record<string, string[]> = {
-  "Смайлы": ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","💩","🤡"],
-  "Жесты": ["👍","👎","👌","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","👇","☝️","✋","🤚","🖐","🖖","👋","🤝","🙏","💪","🦾","✍️","💅","👏","🙌","👐","🤲","🫶","🫰","🫵","🫱","🫲","🫳","🫴"],
-  "Сердца": ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","💟","♥️","💌"],
-  "Огонь": ["🔥","✨","⭐","🌟","💫","⚡","💥","💯","🎉","🎊","🎁","🏆","🥇","🥈","🥉","🎯","💎","👑","🚀","💡","🎵","🎶"],
-  "Еда": ["🍕","🍔","🍟","🌭","🥪","🌮","🌯","🥗","🍿","🍩","🍪","🎂","🍰","🧁","🍫","🍬","🍭","☕","🍵","🥤","🍺","🍷","🍾","🥂"],
-  "Природа": ["🌸","🌺","🌻","🌼","🌷","🌹","🌱","🌿","☘️","🍀","🍃","🌳","🌴","🌵","🌞","🌝","🌚","🌜","🌛","🌙","⭐","☁️","🌈","☀️","🌧","⛈","🌩","❄️","☃️","🌊","🔥"],
+  smiles: ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","💩","🤡"],
+  gestures: ["👍","👎","👌","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","👇","☝️","✋","🤚","🖐","🖖","👋","🤝","🙏","💪","🦾","✍️","💅","👏","🙌","👐","🤲","🫶","🫰","🫵","🫱","🫲","🫳","🫴"],
+  hearts: ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","💟","♥️","💌"],
+  fire: ["🔥","✨","⭐","🌟","💫","⚡","💥","💯","🎉","🎊","🎁","🏆","🥇","🥈","🥉","🎯","💎","👑","🚀","💡","🎵","🎶"],
+  food: ["🍕","🍔","🍟","🌭","🥪","🌮","🌯","🥗","🍿","🍩","🍪","🎂","🍰","🧁","🍫","🍬","🍭","☕","🍵","🥤","🍺","🍷","🍾","🥂"],
+  nature: ["🌸","🌺","🌻","🌼","🌷","🌹","🌱","🌿","☘️","🍀","🍃","🌳","🌴","🌵","🌞","🌝","🌚","🌜","🌛","🌙","⭐","☁️","🌈","☀️","🌧","⛈","🌩","❄️","☃️","🌊","🔥"],
 };
 
 const makeConversationId = (a: string, b: string) =>
@@ -134,10 +134,10 @@ const compressImage = (file: File): Promise<{ data: string; type: string; name: 
         const data = canvas.toDataURL(outputType, 0.92);
         resolve({ data, type: outputType, name: file.name });
       };
-      img.onerror = () => reject(new Error("Не удалось обработать изображение"));
+      img.onerror = () => reject(new Error(t("imageProcessingError")));
       img.src = reader.result as string;
     };
-    reader.onerror = () => reject(new Error("Не удалось прочитать файл"));
+    reader.onerror = () => reject(new Error(t("fileReadError")));
     reader.readAsDataURL(file);
   });
 
@@ -156,7 +156,7 @@ const AudioPlayer = ({ src }: { src: string }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 bg-primary/5 rounded-full px-3 py-2 min-w-[200px]">
+    <div className="flex items-center gap-2 bg-primary/5 dark:bg-primary/10 rounded-full px-2 py-1.5 min-w-[140px] sm:min-w-[200px] w-full max-w-full overflow-hidden">
       <audio 
         ref={audioRef} 
         src={src} 
@@ -167,18 +167,18 @@ const AudioPlayer = ({ src }: { src: string }) => {
       <Button 
         variant="ghost" 
         size="icon" 
-        className="h-8 w-8 rounded-full bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
+        className="h-7 w-7 rounded-full bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
         onClick={toggle}
       >
-        {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+        {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
       </Button>
-      <div className="flex-1 h-1 bg-primary/20 rounded-full relative overflow-hidden">
+      <div className="flex-1 h-1 bg-primary/20 rounded-full relative overflow-hidden pointer-events-none">
         <div 
           className="absolute inset-y-0 left-0 bg-primary transition-all duration-100" 
           style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
         />
       </div>
-      <span className="text-[10px] tabular-nums text-muted-foreground w-8">
+      <span className="text-[9px] sm:text-[10px] tabular-nums text-muted-foreground w-7 shrink-0">
         {Math.floor(currentTime / 60)}:{(Math.floor(currentTime % 60)).toString().padStart(2, '0')}
       </span>
     </div>
@@ -195,6 +195,7 @@ const ChatDialog = ({
   recipientId,
 }: ChatDialogProps) => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [messages, setMessages] = useState<DBMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [pendingFile, setPendingFile] = useState<{
@@ -210,7 +211,7 @@ const ChatDialog = ({
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
-  const [emojiTab, setEmojiTab] = useState<string>("Смайлы");
+  const [emojiTab, setEmojiTab] = useState<string>("smiles");
   const [callOpen, setCallOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [localTyping, setLocalTyping] = useState(false);
@@ -237,7 +238,7 @@ const ChatDialog = ({
         type: "broadcast",
         event: "typing",
         payload: { userId: user.id, isTyping: true }
-      });
+      }).catch(() => {});
     }
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -247,7 +248,7 @@ const ChatDialog = ({
         type: "broadcast",
         event: "typing",
         payload: { userId: user.id, isTyping: false }
-      });
+      }).catch(() => {});
     }, 3000);
   }, [user, recipientId, localTyping]);
 
@@ -259,7 +260,7 @@ const ChatDialog = ({
   const senderName =
     (user?.user_metadata as any)?.user_name ||
     user?.email?.split("@")[0] ||
-    "Пользователь";
+    t("user");
 
   // Load hidden ids when conversation changes
   useEffect(() => {
@@ -287,7 +288,10 @@ const ChatDialog = ({
         .order("created_at", { ascending: true });
       if (!active) return;
       if (error) {
-        toast.error("Не удалось загрузить чат");
+        if (error.code === '20' || error.message?.includes('aborted') || error.message?.includes('signal is aborted')) {
+          return;
+        }
+        toast.error(t("chatLoadError"));
         return;
       }
       setMessages((data as DBMessage[]) || []);
@@ -352,8 +356,32 @@ const ChatDialog = ({
 
     channelRef.current = channel;
 
+    // Polling fallback every 2 seconds
+    const interval = setInterval(async () => {
+      if (!active) return;
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+        
+      if (data && active) {
+        setMessages(prev => {
+          if (prev.length !== data.length) return data as DBMessage[];
+          // also check last message id/edited? Basic check:
+          const lastPrev = prev[prev.length - 1];
+          const lastData = data[data.length - 1];
+          if (lastPrev && lastData && (lastPrev.id !== lastData.id || lastPrev.deleted_for_all !== lastData.deleted_for_all)) {
+            return data as DBMessage[];
+          }
+          return prev;
+        });
+      }
+    }, 2000);
+
     return () => {
       active = false;
+      clearInterval(interval);
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
@@ -421,7 +449,7 @@ const ChatDialog = ({
       setIsRecording(true);
       setRecordingTime(0);
     } catch (err) {
-      toast.error(type === "video" ? "Не удалось получить доступ к камере" : "Не удалось получить доступ к микрофону");
+      toast.error(type === "video" ? t("cameraAccessError") : t("micAccessError"));
     }
   };
 
@@ -450,7 +478,7 @@ const ChatDialog = ({
 
   const handleSend = useCallback(async () => {
     if (!user || !recipientId || !conversationId) {
-      toast.error("Войдите, чтобы отправить сообщение");
+      toast.error(t("loginToMessageChat"));
       return;
     }
     const text = newMessage.trim();
@@ -460,7 +488,7 @@ const ChatDialog = ({
     if (text) {
       const modResult = validateContent(text, true);
       if (!modResult.isValid) {
-        toast.error(modResult.error);
+        toast.error(t(modResult.error as any));
         return;
       }
     }
@@ -496,14 +524,12 @@ const ChatDialog = ({
 
         if (uploadResult.error) {
            const err = uploadResult.error as any;
-           console.log("Upload failed, checking for bucket issues...", err);
+           console.log("Chat upload issue, checking for bucket...", err);
            
-           // If bucket doesn't exist, we might be able to create it if we have permissions, 
-           // but typically that's an admin task. We'll try once.
            if (err.message?.includes("bucket not found") || err.status === 404 || err.message?.includes("Bucket not found")) {
              try {
+               // Try to create but don't crash if forbidden
                await supabase.storage.createBucket('chat_attachments', { public: true });
-               // Retry upload
                uploadResult = await supabase.storage
                 .from('chat_attachments')
                 .upload(filePath, file, {
@@ -511,9 +537,7 @@ const ChatDialog = ({
                   upsert: false
                 });
              } catch (bucketErr) {
-               console.error("Failed to create bucket manually:", bucketErr);
-               // If it still fails with "not found", we throw a VERY specific error
-               throw new Error("STORAGE_BUCKET_MISSING");
+               console.warn("Storage bucket auto-creation failed, will try base64 fallback:", bucketErr);
              }
            }
         }
@@ -521,20 +545,19 @@ const ChatDialog = ({
         const { data: uploadData, error: uploadError } = uploadResult;
 
         if (uploadError) {
-          console.error("Storage upload error final details:", uploadError);
-          
-          // Use Base64 as fallback for any file within reasonable size if storage fails
+          // If file is small enough, we do a silent fallback without alarming the user in console/toast
           if (file.size < FALLBACK_BASE64_MAX_SIZE) {
-            console.log("Falling back to Base64 because storage failed");
+            console.log("Storage upload failed (possibly bucket missing), falling back to Base64 silently...");
             setUploadProgress(30);
             const reader = new FileReader();
             finalFileData = await new Promise((resolve, reject) => {
               reader.onload = () => resolve(reader.result as string);
-              reader.onerror = () => reject(new Error("Ошибка чтения файла"));
+              reader.onerror = () => reject(new Error(t("fileReadError")));
               reader.readAsDataURL(file);
             });
           } else {
-             throw new Error(`Файл слишком велик для альтернативной загрузки (${(file.size / 1024 / 1024).toFixed(1)}MB). Пожалуйста, создайте ПУБЛИЧНЫЙ бакет 'chat_attachments' в Supabase или уменьшите размер файла.`);
+             console.error("Storage upload error final details:", uploadError);
+             throw new Error(t("publicBucketError"));
           }
         } else {
           setUploadProgress(60);
@@ -542,7 +565,7 @@ const ChatDialog = ({
             .from('chat_attachments')
             .getPublicUrl(filePath);
           
-          if (!publicUrl) throw new Error("Не удалось получить ссылку на файл");
+          if (!publicUrl) throw new Error(t("fileReadError"));
           finalFileData = publicUrl;
         }
       }
@@ -600,7 +623,7 @@ const ChatDialog = ({
           type: "broadcast",
           event: "typing",
           payload: { userId: user.id, isTyping: false }
-        });
+        }).catch(() => {});
       }
       // Revoke the blob URL after a delay to ensure the UI has updated
       if (pendingFile?.data.startsWith('blob:')) {
@@ -610,7 +633,12 @@ const ChatDialog = ({
       setPendingFile(null);
       setShowEmoji(false);
     } catch (err: any) {
-      toast.error("Ошибка: " + err.message);
+      if (err.name === 'AbortError' || err.message?.includes('aborted') || err.message?.includes('signal is aborted')) {
+        setSending(false);
+        setUploadProgress(null);
+        return;
+      }
+      toast.error(t("error") + ": " + err.message);
       setSending(false);
       setUploadProgress(null);
     }
@@ -633,7 +661,7 @@ const ChatDialog = ({
 
     if (file.size > MAX_FILE_SIZE) {
       toast.error(
-        `Файл слишком большой (${(file.size / 1024 / 1024).toFixed(1)} МБ). Максимум 250 МБ.`
+        t("fileTooLarge").replace("{size}", (MAX_FILE_SIZE / 1024 / 1024).toString())
       );
       return;
     }
@@ -678,17 +706,18 @@ const ChatDialog = ({
       }
     } catch (err: unknown) {
       const e = err as Error;
-      toast.error(e.message || "Ошибка обработки файла");
+      toast.error(e.message || t("fileReadError"));
     }
   };
 
   const deleteForMe = async (m: DBMessage) => {
     if (!user || !conversationId) return;
     if (m.sender_id === user.id) {
-      await supabase
+      const { error } = await supabase
         .from("messages")
         .update({ deleted_for_sender: true })
         .eq("id", m.id);
+      if (error) toast.error(t("error"));
     } else {
       const next = Array.from(new Set([...hiddenIds, m.id]));
       setHiddenIds(next);
@@ -698,32 +727,40 @@ const ChatDialog = ({
 
   const deleteForAll = async (m: DBMessage) => {
     if (!user || m.sender_id !== user.id) return;
-    const { error } = await supabase.from("messages").delete().eq("id", m.id);
-    if (error) toast.error("Не удалось удалить");
+    const { error } = await supabase
+      .from("messages")
+      .update({ deleted_for_all: true, text: "" })
+      .eq("id", m.id);
+    if (error) toast.error(t("error"));
   };
 
   const clearChat = async (forEveryone: boolean) => {
     if (!user || !conversationId) return;
 
-    if (forEveryone) {
+    try {
+      // 1. Delete all messages the current user sent
       const myIds = messages.filter((m) => m.sender_id === user.id).map((m) => m.id);
       if (myIds.length) {
         await supabase.from("messages").delete().in("id", myIds);
       }
+
+      // 2. For messages from the other person, we can't delete them from DB (usually)
+      // So we hide them locally.
       const otherIds = messages
         .filter((m) => m.sender_id !== user.id)
         .map((m) => m.id);
+      
       const next = Array.from(new Set([...hiddenIds, ...otherIds]));
       setHiddenIds(next);
       localStorage.setItem(`chat_hidden_${conversationId}`, JSON.stringify(next));
-    } else {
-      const allIds = messages.map((m) => m.id);
-      const next = Array.from(new Set([...hiddenIds, ...allIds]));
-      setHiddenIds(next);
-      localStorage.setItem(`chat_hidden_${conversationId}`, JSON.stringify(next));
+
+      setConfirmClear(false);
+      toast.success(t("chatCleared"));
+      setMessages([]); // Clear local state immediately for better UX
+    } catch (err) {
+      console.error(err);
+      toast.error(t("error"));
     }
-    setConfirmClear(false);
-    toast.success("Чат очищен");
   };
 
   const visibleMessages = useMemo(() => {
@@ -736,16 +773,16 @@ const ChatDialog = ({
   }, [messages, user, hiddenIds]);
 
   const formatTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    new Date(iso).toLocaleTimeString(language === "ru" ? "ru-RU" : "en-US", { hour: "2-digit", minute: "2-digit" });
 
   const formatDateLabel = (iso: string) => {
     const d = new Date(iso);
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-    if (d.toDateString() === today.toDateString()) return "Сегодня";
-    if (d.toDateString() === yesterday.toDateString()) return "Вчера";
-    return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    if (d.toDateString() === today.toDateString()) return t("today");
+    if (d.toDateString() === yesterday.toDateString()) return t("yesterday");
+    return d.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "long" });
   };
 
   // Group with date separators
@@ -855,7 +892,7 @@ const ChatDialog = ({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium truncate">{m.file_name}</p>
-          <p className="text-[10px] opacity-70">Нажмите, чтобы скачать</p>
+          <p className="text-[10px] opacity-70">{t("clickToDownload")}</p>
         </div>
         <Download className="w-3.5 h-3.5 opacity-60" />
       </a>
@@ -870,7 +907,7 @@ const ChatDialog = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md h-[100dvh] sm:h-[640px] flex flex-col p-0 gap-0 overflow-hidden sm:rounded-2xl">
           <DialogHeader className="sr-only">
-            <DialogTitle>Чат</DialogTitle>
+            <DialogTitle>{t("chatTitle")}</DialogTitle>
           </DialogHeader>
           {/* Header */}
           <DialogHeader className="px-4 py-2.5 bg-[#f0f2f5] dark:bg-[#202c33] flex-row items-center justify-between space-y-0 shrink-0 shadow-sm z-10 border-b border-border/10">
@@ -893,17 +930,17 @@ const ChatDialog = ({
                 <div className="flex items-center gap-1.5 h-4">
                   {isTyping ? (
                     <span className="text-[12px] text-[#00a884] font-medium animate-pulse">
-                      печатает...
+                      {t("isTyping")}
                     </span>
                   ) : noRecipient ? (
-                    <span className="text-[11px] text-muted-foreground">Демо-чат</span>
+                    <span className="text-[11px] text-muted-foreground">{t("demoChat")}</span>
                   ) : isRecipientOnline ? (
                     <div className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">В сети</span>
+                      <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{t("onlineStatus")}</span>
                     </div>
                   ) : (
-                    <span className="text-[11px] text-muted-foreground">Не в сети</span>
+                    <span className="text-[11px] text-muted-foreground">{t("offlineStatus")}</span>
                   )}
                 </div>
               </div>
@@ -915,47 +952,43 @@ const ChatDialog = ({
                 className="h-9 w-9 shrink-0 rounded-full hover:bg-primary/10 transition-colors"
                 onClick={() => setCallOpen(true)}
                 disabled={noRecipient}
-                title="Позвонить"
+                title={t("call")}
               >
                 <Phone className="w-4 h-4 text-primary" />
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-full">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => setConfirmClear(true)}
-                    className="text-destructive focus:text-destructive"
-                    disabled={noRecipient || messages.length === 0}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Очистить чат
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+                onClick={() => setConfirmClear(true)}
+                disabled={noRecipient || messages.length === 0}
+                title={t("clearChatBtn")}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           </DialogHeader>
 
           {/* Messages */}
           <ScrollArea
-            className="flex-1 bg-[#efeae2] dark:bg-[#0c1317] relative transition-colors duration-300"
+            className="flex-1 relative transition-colors duration-300"
             ref={scrollRef}
           >
+            {/* WhatsApp-style decorative background */}
             <div 
-              className="absolute inset-0 z-0 opacity-[0.25] dark:opacity-[0.08] pointer-events-none transition-opacity duration-700" 
+              className="absolute inset-0 z-0 bg-[#efeae2] dark:bg-[#0c1317] pointer-events-none transition-colors duration-500"
+            />
+            <div 
+              className="absolute inset-0 z-0 opacity-[0.25] dark:opacity-[0.05] pointer-events-none transition-opacity duration-700 select-none mix-blend-multiply dark:mix-blend-overlay" 
               style={{ 
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239ca3af' fill-opacity='0.15'%3E%3Cpath d='M10 10l5 5-5 5-5-5zM40 30l3 3-3 3-3-3zM80 15l4 4-4 4-4-4zM100 40h4v4h-4zM20 70c2 0 4 2 4 4s-2 4-4 4-4-2-4-4 2-4 4-4zm60 10h6v2h-6zM30 100l3-3 3 3-3 3z' /%3E%3Ccircle cx='60' cy='60' r='2' /%3E%3Cpath d='M10 90h2v10h-2zM90 10c0 5 4 9 9 9s9-4 9-9-4-9-9-9-9 4-9 9zm20 80l-4 4 4 4 4-4z' /%3E%3C/g%3E%3C/svg%3E")`, 
-                backgroundSize: '150px 150px',
-                filter: 'contrast(0.9) brightness(1.1)'
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='500' height='500' viewBox='0 0 500 500' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000' fill-opacity='1'%3E%3C!-- Phone --%3E%3Cpath d='M30 30h20v40H30zM35 35h10v30H35zM40 68h2v2h-2z' /%3E%3C!-- Heart --%3E%3Cpath d='M90 40c-2-2-5-2-7 0-2 2-2 5 0 7l7 7 7-7c2-2 2-5 0-7-2-2-5-2-7 0z' /%3E%3C!-- Cloud --%3E%3Cpath d='M150 40a10 10 0 0 1 18 0 7 7 0 0 1 2 13h-22a7 7 0 0 1 2-13z' /%3E%3C!-- Message bubble --%3E%3Cpath d='M220 30h30v20h-20l-10 10z' /%3E%3C!-- Coffee/Tea --%3E%3Cpath d='M300 40h20v20h-20zM320 45h5v5h-5z' /%3E%3C!-- Star --%3E%3Cpath d='M380 40l3 7 7 3-7 3-3 7-3-7-7-3 7-3z' /%3E%3C!-- Tree/Leaf --%3E%3Ccircle cx='450' cy='45' r='12' /%3E%3Crect x='448' y='57' width='4' height='10' /%3E%3C!-- Camera --%3E%3Crect x='30' y='120' width='30' height='20' rx='3' /%3E%3Ccircle cx='45' cy='130' r='6' /%3E%3C!-- Music note --%3E%3Cpath d='M110 120v20c0 3-2 5-5 5s-5-2-5-5 2-5 5-5v-10l15-5v10z' /%3E%3C!-- Location pin --%3E%3Cpath d='M180 120c-5 0-10 5-10 10 0 7 10 15 10 15s10-8 10-15c0-5-5-10-10-10z' /%3E%3C!-- Mic --%3E%3Crect x='250' y='120' width='10' height='20' rx='5' /%3E%3Cpath d='M245 135a10 10 0 0 0 20 0' /%3E%3C!-- Gift --%3E%3Crect x='320' y='120' width='25' height='25' /%3E%3Cpath d='M320 132h25M332 120v25' /%3E%3C!-- Pencil --%3E%3Cpath d='M400 120l20 20-5 5-20-20zM400 120l-5 5 5 5 5-5z' /%3E%3C!-- Atom/Node --%3E%3Ccircle cx='470' cy='130' r='4' /%3E%3Ccircle cx='455' cy='150' r='4' /%3E%3Ccircle cx='485' cy='150' r='4' /%3E%3Cpath d='M470 130l-15 20M470 130l15 20' /%3E%3C!-- Sun --%3E%3Ccircle cx='50' cy='250' r='12' /%3E%3C!-- Smile --%3E%3Ccircle cx='120' cy='250' r='15' /%3E%3Cpath d='M115 255a10 10 0 0 0 10 0' /%3E%3C!-- Plane --%3E%3Cpath d='M190 240l20 20-30 0z' /%3E%3C!-- Trophy --%3E%3Cpath d='M270 240h20v15c0 8-5 15-10 15s-10-7-10-15z' /%3E%3C!-- Rocket --%3E%3Cpath d='M350 230c0 15 10 30 10 30h-20s10-15 10-30z' /%3E%3C!-- Key --%3E%3Ccircle cx='430' cy='240' r='6' /%3E%3Cpath d='M430 246v20h5v-3h-5v-3h5v-3h-5' /%3E%3C!-- Book --%3E%3Crect x='40' y='350' width='25' height='30' /%3E%3Cpath d='M45 350v30' /%3E%3C!-- Globe --%3E%3Ccircle cx='130' cy='360' r='15' /%3E%3Cpath d='M115 360h30M130 345v30' /%3E%3C!-- Lightning --%3E%3Cpath d='M210 340l-10 20h15l-10 20' /%3E%3C!-- Umbrella --%3E%3Cpath d='M290 350a15 15 0 0 1 30 0' /%3E%3Cpath d='M305 350v15h5' /%3E%3C!-- Clock --%3E%3Ccircle cx='380' cy='360' r='15' /%3E%3Cpath d='M380 348v12h8' /%3E%3C!-- Controller --%3E%3Crect x='450' y='350' width='35' height='20' rx='10' /%3E%3C!-- Mail --%3E%3Crect x='50' y='460' width='30' height='20' /%3E%3Cpath d='M50 460l15 10 15-10' /%3E%3C!-- Bell --%3E%3Cpath d='M140 450a10 10 0 0 1 20 0v15h-20z' /%3E%3C!-- Anchor --%3E%3Cpath d='M220 450v20' /%3E%3Cpath d='M210 460a10 10 0 0 0 20 0' /%3E%3C!-- Tool --%3E%3Cpath d='M300 450l20 20' /%3E%3Crect x='315' y='465' width='10' height='10' /%3E%3C!-- Lock --%3E%3Crect x='380' y='460' width='20' height='20' /%3E%3Cpath d='M385 460v-5a5 5 0 0 1 10 0v5' /%3E%3C!-- Shield --%3E%3Cpath d='M460 450v20l15 10 15-10v-20z' /%3E%3C/g%3E%3C/svg%3E")`, 
+                backgroundSize: '480px 480px',
               }}
             />
             <div className="p-4 space-y-2 pb-6 relative z-10 w-full max-w-3xl mx-auto">
               {noRecipient && (
                 <p className="text-center text-muted-foreground text-sm py-12">
-                  Откройте чат из карточки навыка или раздела «Сессии»
+                  {t("noRecipientPlaceholder")}
                 </p>
               )}
               {grouped.length === 0 && !noRecipient && (
@@ -968,7 +1001,7 @@ const ChatDialog = ({
                     <Send className="w-7 h-7 text-primary" />
                   </div>
                   <p className="text-sm text-muted-foreground max-w-[240px]">
-                    Начните разговор — напишите первое сообщение, чтобы договориться об обмене
+                    {t("startConversation")}
                   </p>
                 </motion.div>
               )}
@@ -1013,7 +1046,7 @@ const ChatDialog = ({
                             {isMe ? (
                               <>
                                 <AvatarImage src={(user?.user_metadata as any)?.avatar_url} />
-                                <AvatarFallback className="bg-primary/10 text-[10px] text-primary">Я</AvatarFallback>
+                                <AvatarFallback className="bg-primary/10 text-[10px] text-primary">{t("meAbbr")}</AvatarFallback>
                               </>
                             ) : (
                               <>
@@ -1029,77 +1062,80 @@ const ChatDialog = ({
                             isMe ? "flex-row" : "flex-row-reverse"
                           }`}
                         >
-                      {!isDeleted && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0"
-                            >
-                              <MoreVertical className="w-3 h-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align={isMe ? "end" : "start"}>
-                            <DropdownMenuItem onClick={() => deleteForMe(m)}>
-                              Удалить у себя
-                            </DropdownMenuItem>
-                            {isMe && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => deleteForAll(m)}
-                                  className="text-destructive focus:text-destructive"
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-[18px] min-w-0 max-w-full overflow-hidden">
+                                <div
+                                  className={`relative min-w-0 overflow-hidden ${
+                                    hasOnlyImage ? "p-1.5" : "px-3.5 py-2"
+                                  } shadow-md border border-black/5 dark:border-white/5 ${
+                                    isMe
+                                      ? "bg-gradient-to-br from-[#e2ffc7] to-[#d4f8b1] text-[#111b21] dark:from-[#005c4b] dark:to-[#004e3f] dark:text-[#e9edef] rounded-[18px] rounded-tr-[2px]"
+                                      : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-[#e9edef] rounded-[18px] rounded-tl-[2px]"
+                                  } ${isDeleted ? "italic opacity-60 bg-transparent shadow-none border border-border" : ""}`}
                                 >
-                                  Удалить у всех
+                                  {isDeleted ? (
+                                    <p className="text-sm italic">{t("messageDeleted")}</p>
+                                  ) : (
+                                    <div className="flex flex-col min-w-0">
+                                      {renderFile(m)}
+                                      {m.text && (
+                                        <div className="text-[15px] whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-[1.4] min-w-0 overflow-hidden pr-2">
+                                          {m.text}
+                                          <span className="inline-block w-14" /> {/* Space for time */}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  <div
+                                    className={`absolute bottom-1 right-2.5 flex items-center gap-1.5 text-[10px] select-none transition-all duration-300 ${
+                                      hasOnlyImage || m.file_type === "video/note" 
+                                        ? "px-2.5 py-1 bg-black/50 backdrop-blur-md rounded-full text-white ring-1 ring-white/20 shadow-lg" 
+                                        : "bg-black/5 dark:bg-white/5 backdrop-blur-[2px] px-1.5 py-0.5 rounded-sm"
+                                    } ${
+                                      isMe && !hasOnlyImage && m.file_type !== "video/note"
+                                        ? "text-black/60 dark:text-white/60"
+                                        : !hasOnlyImage && m.file_type !== "video/note" ? "text-black/60 dark:text-white/60" : ""
+                                    }`}
+                                  >
+                                    <span className="font-medium">{formatTime(m.created_at)}</span>
+                                    {isMe && !isDeleted && (
+                                      m.read_at 
+                                        ? <CheckCheck className={`w-3.5 h-3.5 ${hasOnlyImage || m.file_type === "video/note" ? "text-white" : "text-blue-500"}`} /> 
+                                        : <Check className={`w-3.5 h-3.5 ${hasOnlyImage || m.file_type === "video/note" ? "text-white" : "text-black/30 dark:text-white/30"}`} />
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            </DropdownMenuTrigger>
+                            {!isDeleted && (
+                              <DropdownMenuContent align={isMe ? "end" : "start"} className="rounded-xl p-1 w-44">
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteForMe(m);
+                                  }}
+                                  className="flex items-center gap-2 cursor-pointer rounded-lg text-sm"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {t("deleteForMe")}
                                 </DropdownMenuItem>
-                              </>
+                                {isMe && (
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteForAll(m);
+                                    }}
+                                    className="flex items-center gap-2 cursor-pointer rounded-lg text-sm text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    {t("deleteForAll")}
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
                             )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                      <div
-                        className={`relative min-w-0 overflow-hidden ${
-                          hasOnlyImage ? "p-1.5" : "px-3.5 py-2"
-                        } shadow-md border border-black/5 dark:border-white/5 ${
-                          isMe
-                            ? "bg-gradient-to-br from-[#e2ffc7] to-[#d4f8b1] text-[#111b21] dark:from-[#005c4b] dark:to-[#004e3f] dark:text-[#e9edef] rounded-[18px] rounded-tr-[2px]"
-                            : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-[#e9edef] rounded-[18px] rounded-tl-[2px]"
-                        } ${isDeleted ? "italic opacity-60 bg-transparent shadow-none border border-border" : ""}`}
-                      >
-                        {isDeleted ? (
-                          <p className="text-sm">Сообщение удалено</p>
-                        ) : (
-                          <>
-                            {renderFile(m)}
-                            {m.text && (
-                              <p className="text-[15px] whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-[1.4] min-w-0">
-                                {m.text}
-                                <span className="inline-block w-14" /> {/* Space for time */}
-                              </p>
-                            )}
-                          </>
-                        )}
-                        <div
-                          className={`absolute bottom-1 right-2.5 flex items-center gap-1.5 text-[10px] select-none transition-all duration-300 ${
-                            hasOnlyImage || m.file_type === "video/note" 
-                              ? "px-2.5 py-1 bg-black/50 backdrop-blur-md rounded-full text-white ring-1 ring-white/20 shadow-lg" 
-                              : "bg-black/5 dark:bg-white/5 backdrop-blur-[2px] px-1.5 py-0.5 rounded-sm"
-                          } ${
-                            isMe && !hasOnlyImage && m.file_type !== "video/note"
-                              ? "text-black/60 dark:text-white/60"
-                              : !hasOnlyImage && m.file_type !== "video/note" ? "text-black/60 dark:text-white/60" : ""
-                          }`}
-                        >
-                          <span className="font-medium">{formatTime(m.created_at)}</span>
-                          {isMe && !isDeleted && (
-                            m.read_at 
-                              ? <CheckCheck className={`w-3.5 h-3.5 ${hasOnlyImage || m.file_type === "video/note" ? "text-white" : "text-blue-500"}`} /> 
-                              : <Check className={`w-3.5 h-3.5 ${hasOnlyImage || m.file_type === "video/note" ? "text-white" : "text-black/30 dark:text-white/30"}`} />
-                          )}
+                          </DropdownMenu>
                         </div>
-                      </div>
-                    </div>
                   </div>
                 </motion.div>
                 );
@@ -1108,15 +1144,18 @@ const ChatDialog = ({
               
               {isTyping && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="flex justify-start"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="flex justify-start items-center gap-2 mb-2"
                 >
-                  <div className="bg-white text-black dark:bg-[#202c33] dark:text-white rounded-[16px] rounded-bl-[4px] px-4 py-2.5 shadow-sm inline-flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-black/50 dark:bg-white/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                    <span className="w-1.5 h-1.5 bg-black/50 dark:bg-white/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span className="w-1.5 h-1.5 bg-black/50 dark:bg-white/50 rounded-full animate-bounce"></span>
+                  <div className="bg-white/80 dark:bg-[#202c33]/80 backdrop-blur-md text-black dark:text-white rounded-[18px] rounded-bl-[4px] px-3.5 py-2 shadow-sm flex items-center gap-1.5 border border-black/5 dark:border-white/5">
+                    <div className="flex gap-1 items-center h-4">
+                      <span className="w-1.5 h-1.5 bg-[#00a884] rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:-0.32s]"></span>
+                      <span className="w-1.5 h-1.5 bg-[#00a884] rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:-0.16s]"></span>
+                      <span className="w-1.5 h-1.5 bg-[#00a884] rounded-full animate-bounce [animation-duration:0.8s]"></span>
+                    </div>
+                    <span className="text-[12px] text-muted-foreground font-medium pr-1">{t("isTyping")}</span>
                   </div>
                 </motion.div>
               )}
@@ -1150,13 +1189,13 @@ const ChatDialog = ({
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground truncate font-medium">
-                    {uploadProgress !== null ? "Отправка..." : (pendingFile?.name || "Файл")}
+                    {uploadProgress !== null ? t("sendingProgress") : (pendingFile?.name || "File")}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {uploadProgress !== null ? `${uploadProgress}%` : (
                       pendingFile ? (pendingFile.sizeKb < 1024
-                        ? `${pendingFile.sizeKb} КБ`
-                        : `${(pendingFile.sizeKb / 1024).toFixed(1)} МБ`) : ""
+                        ? `${pendingFile.sizeKb} ${t("kb")}`
+                        : `${(pendingFile.sizeKb / 1024).toFixed(1)} ${t("mb")}`) : ""
                     )}
                   </p>
                 </div>
@@ -1190,7 +1229,7 @@ const ChatDialog = ({
                       value={cat}
                       className="text-xs px-2.5 py-1 shrink-0 data-[state=active]:bg-secondary"
                     >
-                      {cat}
+                      {t(`emoji_${cat}`)}
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -1235,7 +1274,7 @@ const ChatDialog = ({
                       {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
                     </span>
                     <span className="text-[11px] text-muted-foreground ml-1">
-                      {recordingType === 'video' ? 'Видеозаметка...' : 'Голосовое сообщение...'}
+                      {recordingType === 'video' ? t("videoNote") : t("voiceMessage")}
                     </span>
                   </div>
                 </div>
@@ -1251,7 +1290,7 @@ const ChatDialog = ({
                      }} 
                      className="text-destructive hover:bg-destructive/10 rounded-full font-medium"
                    >
-                     Отмена
+                     {t("cancel")}
                    </Button>
                    <Button 
                      size="sm" 
@@ -1259,7 +1298,7 @@ const ChatDialog = ({
                      onClick={stopRecording}
                    >
                      <StopCircle className="w-4 h-4 mr-2" />
-                     Готово
+                     {t("done")}
                    </Button>
                 </div>
               </div>
@@ -1298,8 +1337,8 @@ const ChatDialog = ({
                       <Video className="w-4 h-4" />
                     </div>
                     <div>
-                      <strong className="block text-sm">Фото и видео</strong>
-                      <span className="text-[10px] text-muted-foreground line-clamp-1">До 250 MB (до 2 мин)</span>
+                      <strong className="block text-sm">{t("photoAndVideo")}</strong>
+                      <span className="text-[10px] text-muted-foreground line-clamp-1">{t("limitInfo")}</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -1309,7 +1348,7 @@ const ChatDialog = ({
                     <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3 text-indigo-600">
                       <Paperclip className="w-4 h-4" />
                     </div>
-                    <strong>Документ</strong>
+                    <strong>{t("document")}</strong>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1325,7 +1364,7 @@ const ChatDialog = ({
                 </Button>
                 <textarea
                   ref={textareaRef}
-                  placeholder={noRecipient ? "Чат недоступен" : "Введите сообщение"}
+                  placeholder={noRecipient ? t("chatUnavailable") : t("typeMessage")}
                   value={newMessage}
                   onChange={(e) => {
                     setNewMessage(e.target.value);
@@ -1347,7 +1386,7 @@ const ChatDialog = ({
                     onClick={() => startRecording("audio")}
                     disabled={noRecipient || sending}
                     className="h-11 w-11 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-all transform active:scale-95 flex items-center justify-center"
-                    title="Голосовое сообщение"
+                    title={t("voiceMsgTooltip")}
                   >
                     <Mic className="w-5 h-5" />
                   </Button>
@@ -1357,7 +1396,7 @@ const ChatDialog = ({
                     onClick={() => startRecording("video")}
                     disabled={noRecipient || sending}
                     className="h-11 w-11 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-all transform active:scale-95 flex items-center justify-center"
-                    title="Видеозаметка"
+                    title={t("videoNoteTooltip")}
                   >
                     <Video className="w-5 h-5" />
                   </Button>
@@ -1381,7 +1420,7 @@ const ChatDialog = ({
         open={callOpen}
         onOpenChange={setCallOpen}
         partnerName={recipientName}
-        skillTitle="общение"
+        skillTitle={t("home")}
         partnerId={recipientId}
       />
 
@@ -1389,7 +1428,7 @@ const ChatDialog = ({
       <Dialog open={!!lightbox} onOpenChange={(o) => o === false && setLightbox(null)}>
         <DialogContent className="max-w-3xl p-0 bg-transparent border-0 shadow-none">
           <DialogHeader className="sr-only">
-            <DialogTitle>Просмотр изображения</DialogTitle>
+            <DialogTitle>{t("imageLightboxTitle")}</DialogTitle>
           </DialogHeader>
           {lightbox && (
             <img
@@ -1404,27 +1443,18 @@ const ChatDialog = ({
       <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Удалить сообщение?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Очистить чат</AlertDialogTitle>
+            <AlertDialogTitle>{t("clearChatTitle") || "Clear chat history?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Вы хотите очистить чат только у себя или у всех участников? (ваши сообщения будут удалены для всех)
+              {t("clearChatDesc") || "Are you sure you want to completely clear this chat history?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel className="mb-0 sm:mr-auto">Отмена</AlertDialogCancel>
+            <AlertDialogCancel className="mb-0 sm:mr-auto">{t("cancel") || "Cancel"}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => clearChat(false)}
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/80 mt-2 sm:mt-0"
-            >
-              Только у меня
-            </AlertDialogAction>
-            <AlertDialogAction
-              onClick={() => clearChat(true)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 mt-2 sm:mt-0"
             >
-              У всех
+              {t("clear") || "Clear"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

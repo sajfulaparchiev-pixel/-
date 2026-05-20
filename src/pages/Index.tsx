@@ -6,31 +6,36 @@ import { ArrowRight, Users, Zap, Star, Shield } from "lucide-react";
 import FlowIcon from "@/components/ui/FlowIcon";
 import heroBg from "@/assets/hero-bg.jpg";
 
-const features = [
+import { useLanguage } from "@/contexts/LanguageContext";
+
+const features = (t: any) => [
   {
     icon: Users,
-    title: "Найди партнёра",
-    description: "Умный алгоритм подберёт людей с взаимными интересами",
+    title: t("findPartner"),
+    description: t("findPartnerDesc"),
   },
   {
     icon: Zap,
-    title: "Обменяй навыки",
-    description: "Учи других и учись сам — бесплатно и эффективно",
+    title: t("exchangeSkills"),
+    description: t("exchangeSkillsDesc"),
   },
   {
     icon: Star,
-    title: "Развивай репутацию",
-    description: "Получай отзывы и становись экспертом сообщества",
+    title: t("reputationTitle"),
+    description: t("reputationDesc"),
   },
   {
     icon: Shield,
-    title: "Безопасно",
-    description: "Модерация и система отзывов защищают участников",
+    title: t("safeTitle"),
+    description: t("safeDesc"),
   },
 ];
 
 
 const Index = () => {
+  const { t } = useLanguage();
+  const currentFeatures = features(t);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -56,7 +61,7 @@ const Index = () => {
             >
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
                 <FlowIcon size={16} className="text-primary" />
-                Свободный обмен навыками
+                {t("skillExchangeFree")}
               </span>
             </motion.div>
 
@@ -66,8 +71,13 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight mb-6"
             >
-              Учись новому,{" "}
-              <span className="text-gradient">делясь своим</span>
+              {t("learnNewBySharing").split(",").map((part, i) => (
+                <span key={i}>
+                  {part}
+                  {i === 0 && ","}
+                  {i === 0 && <br className="hidden sm:block" />}
+                </span>
+              ))}
             </motion.h1>
 
             <motion.p
@@ -76,9 +86,7 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
             >
-              Skillflow — платформа, где люди обмениваются знаниями и навыками
-              напрямую. Учи программированию, музыке или языкам в обмен на то,
-              что хочешь изучить сам.
+              {t("heroDescription")}
             </motion.p>
 
             <motion.div
@@ -89,13 +97,13 @@ const Index = () => {
             >
               <Button variant="hero" size="xl" asChild>
                 <Link to="/auth?mode=signup">
-                  Создать аккаунт
+                  {t("createAccount")}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
               <Button variant="outline" size="xl" asChild>
-                <Link to="/auth">
-                  Войти
+                <Link to="/auth?mode=login">
+                  {t("signIn")}
                 </Link>
               </Button>
             </motion.div>
@@ -130,15 +138,15 @@ const Index = () => {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Как это работает
+              {t("howItWorksTitle")}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Простой способ учиться и делиться знаниями с единомышленниками
+              {t("howItWorksSubtitle")}
             </p>
           </motion.div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
+            {currentFeatures.map((feature, index) => (
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 20 }}
@@ -174,14 +182,14 @@ const Index = () => {
             <div className="absolute inset-0 gradient-hero opacity-90" />
             <div className="relative z-10 py-16 px-8 text-center">
               <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">
-                Готов начать обмениваться навыками?
+                {t("readyToStart")}
               </h2>
               <p className="text-primary-foreground/80 text-lg max-w-xl mx-auto mb-8">
-                Присоединяйся к сообществу и начни учиться уже сегодня
+                {t("joinCommunity")}
               </p>
               <Button variant="secondary" size="xl" asChild>
                 <Link to="/auth?mode=signup">
-                  Создать аккаунт
+                  {t("createAccount")}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
@@ -201,7 +209,7 @@ const Index = () => {
               <span className="font-bold text-foreground">Skillflow</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2026 Skillflow. Все права защищены.
+              © 2026 Skillflow. {t("allRightsReserved")}
             </p>
           </div>
         </div>

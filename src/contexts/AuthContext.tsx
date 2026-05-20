@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string, surname?: string, skills?: string[]) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, surname?: string, skills?: string[]) => Promise<{ data?: any; error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (data: { name?: string; surname?: string; bio?: string; skills?: string[]; notifications?: boolean; emailNotifications?: boolean; profileVisibility?: boolean; showOnlineStatus?: boolean; language?: string; avatar_id?: string; phone?: string }) => Promise<{ error: Error | null }>;
@@ -39,41 +39,76 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (isMounted) setLoading(false);
     }, 5000);
 
-    // Get initial session with built-in retry for abort errors
+    // Get initial session with built-in retry and timeout
     const getInitialSession = async (retries = 2) => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log("Attempting to load auth session...");
+        
+        // Add a 4 second timeout for getSession call itself
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Supabase auth timeout")), 4000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
+
         if (error) throw error;
         
         if (isMounted) {
           setSession(session);
           setUser(session?.user ?? null);
-          console.log("Session loaded successfully", session?.user?.id || "No user");
+          console.log("Auth context: Session check complete", session?.user?.email || "No session");
         }
       } catch (err: any) {
-        // Ignore aborted signal errors which can happen in some browser environments or during rapid re-renders
+        const errorMessage = err.message || String(err);
+        const isTimeout = errorMessage.includes("timeout");
         const isAbortError = err.name === 'AbortError' || 
-                           err.message?.includes('aborted') || 
-                           err.message?.includes('signal is aborted');
+                           errorMessage.includes('aborted') || 
+                           errorMessage.includes('signal is aborted');
         
-        if (isAbortError && retries > 0 && isMounted) {
-          // If aborted but still mounted, it might be a transient browser issue or re-render
-          // We don't log this to console anymore to avoid scaring the user
+        const isRefreshTokenError = errorMessage.includes('Refresh Token Not Found') || 
+                                   errorMessage.includes('Invalid Refresh Token');
+        
+        if ((isAbortError || isTimeout) && retries > 0 && isMounted) {
+          // If aborted or timed out but still mounted, it might be a transient browser issue or re-render
+          console.log(`Auth check ${isTimeout ? 'timed out' : 'aborted'}. Retrying... (${retries} left)`);
           await new Promise(r => setTimeout(r, 800));
           return getInitialSession(retries - 1);
         }
+
+        if (isRefreshTokenError) {
+          console.warn("Auth session expired or invalid. Clearing all auth-related local storage.");
+          
+          // Clear ALL potential supabase auth tokens
+          Object.keys(localStorage).forEach(key => {
+            if (key.includes('-auth-token') || key.includes('supabase.auth.token')) {
+              localStorage.removeItem(key);
+            }
+          });
+          
+          if (isMounted) {
+            setSession(null);
+            setUser(null);
+          }
+          return;
+        }
                            
         if (!isAbortError) {
-          console.error("Initial session load failed:", err);
-          // Only clear token if it's a real error, not a network abort/timeout
-          if (err.status !== 401 && err.status !== 403) {
-            localStorage.removeItem('supabase.auth.token');
+          console.error("Initial session load error:", err);
+          
+          // If it's a 400ish error, it's likely a bad token
+          if (err.status === 400 || err.status === 401 || err.status === 403 || err.status === 422) {
+            Object.keys(localStorage).forEach(key => {
+              if (key.includes('-auth-token') || key.includes('supabase.auth.token')) {
+                localStorage.removeItem(key);
+              }
+            });
           }
         }
         
-        // If it was aborted, we don't necessarily want to set session to null yet 
-        // if another attempt might succeed or onAuthStateChange might fire.
-        // But if we've run out of retries, we must finalize.
         if (isMounted && (!isAbortError || retries === 0)) {
           setSession(null);
           setUser(null);
@@ -106,32 +141,46 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
+  const isSilentError = (err: any) => {
+    const msg = err?.message || String(err);
+    return msg.includes('aborted') || msg.includes('signal is aborted') || err?.name === 'AbortError';
+  };
+
   const signUp = async (email: string, password: string, name: string, surname?: string, skills?: string[]) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          surname: surname || "",
-          email,
-          bio: "",
-          skills: skills || [],
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            surname: surname || "",
+            email,
+            bio: "",
+            skills: skills || [],
+          },
         },
-      },
-    });
-    return { error };
+      });
+      return { data, error };
+    } catch (err: any) {
+      if (isSilentError(err)) return { data: null, error: null };
+      return { data: null, error: err };
+    }
   };
 
   const updateProfile = async (data: { name?: string; surname?: string; bio?: string; skills?: string[]; avatar_id?: string; phone?: string; [key: string]: any }) => {
-    const { data: updated, error } = await supabase.auth.updateUser({
-      data: data,
-    });
-    // Sync display fields onto user's existing skill cards
     try {
+      const { data: updated, error } = await supabase.auth.updateUser({
+        data: data,
+      });
+      
+      if (error) throw error;
+
+      // Sync display fields onto user's existing skill cards
       if (updated?.user) {
+        setUser(updated.user); // Upate auth context user immediately
         const meta = { ...(updated.user.user_metadata || {}), ...data };
-        const name = meta.name || "Аноним";
+        const name = meta.name || "Anonymous";
         const surname = meta.surname || "";
         const displayName = surname ? `${name} ${surname.charAt(0)}.` : name;
         
@@ -139,22 +188,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           .from("skills")
           .update({ 
             user_name: displayName, 
-            user_avatar: meta.avatar_id || null,
+            user_avatar: meta.avatar_id || null
           })
           .eq("user_id", updated.user.id);
+
+        // Notify other components to refresh data
+        window.dispatchEvent(new Event("profileUpdated"));
       }
-    } catch (e) {
-      console.warn("Could not sync skill display fields", e);
+      return { error: null };
+    } catch (err: any) {
+      if (isSilentError(err)) return { error: null };
+      console.warn("Could not fully sync profile", err);
+      return { error: err };
     }
-    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (err: any) {
+      if (isSilentError(err)) return { error: null };
+      return { error: err };
+    }
   };
 
   const signOut = async () => {

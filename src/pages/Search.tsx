@@ -5,27 +5,30 @@ import MobileNav from "@/components/layout/MobileNav";
 import SkillCard from "@/components/skills/SkillCard";
 import SkillFilters from "@/components/skills/SkillFilters";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { useSkills } from "@/contexts/SkillsContext";
 import { useAuth } from "@/contexts/AuthContext";
-
-const popularSkills = [
-  "React",
-  "Python",
-  "Дизайн",
-  "Английский",
-  "Гитара",
-  "Фотография",
-  "Маркетинг",
-  "Йога",
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Search = () => {
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("Все");
+  const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const { skills, searchSkills } = useSkills();
   const { user } = useAuth();
+
+  const popularSkills = [
+    "React",
+    "Python",
+    t("popularSkillList.design"),
+    t("popularSkillList.english"),
+    t("popularSkillList.guitar"),
+    t("popularSkillList.photography"),
+    t("popularSkillList.marketing"),
+    t("popularSkillList.yoga"),
+  ];
 
   const results = useMemo(() => {
     let res = searchSkills(query, category);
@@ -45,10 +48,10 @@ const Search = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="text-center mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-              Поиск навыков
+              {t("searchSkills")}
             </h1>
             <p className="text-muted-foreground">
-              Найди именно то, что хочешь изучить
+              {t("findWhatYouWant")}
             </p>
           </div>
 
@@ -66,7 +69,7 @@ const Search = () => {
           {!query && (
             <div className="mb-8">
               <h2 className="text-base font-semibold text-foreground mb-3">
-                Популярные запросы
+                {t("popularRequests")}
               </h2>
               <div className="flex flex-wrap gap-2">
                 {popularSkills.map((skill) => (
@@ -88,7 +91,7 @@ const Search = () => {
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-5 h-5 text-accent" />
               <h2 className="text-lg font-semibold text-foreground">
-                {query || category !== "Все" ? "Результаты" : "Все навыки"}
+                {query || (category !== t("all")) ? t("results") : t("allSkills")}
               </h2>
               <Badge variant="secondary" className="ml-auto">
                 {results.length}
@@ -97,9 +100,9 @@ const Search = () => {
 
             {results.length === 0 ? (
               <div className="text-center py-12">
-                 <p className="text-muted-foreground text-lg mb-4">Ничего не найдено. Попробуйте другой запрос.</p>
-                 <Button variant="outline" onClick={() => { setQuery(""); setCategory("Все"); }}>
-                   Сбросить фильтры
+                 <p className="text-muted-foreground text-lg mb-4">{t("nothingFound")}</p>
+                 <Button variant="outline" onClick={() => { setQuery(""); setCategory(t("all")); }}>
+                   {t("resetFilters")}
                  </Button>
               </div>
             ) : (

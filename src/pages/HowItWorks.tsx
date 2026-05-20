@@ -12,79 +12,53 @@ import {
 } from "lucide-react";
 import FlowIcon from "@/components/ui/FlowIcon";
 
-const steps = [
+import { useLanguage } from "@/contexts/LanguageContext";
+
+const steps = (t: any) => [
   {
     number: "01",
     icon: UserPlus,
-    title: "Создай профиль",
-    description: "Зарегистрируйся и добавь навыки, которыми хочешь поделиться. Расскажи, чему хочешь научиться.",
-    details: [
-      "Быстрая регистрация через email или соцсети",
-      "Выбери до 10 навыков для обмена",
-      "Укажи уровень владения каждым навыком",
-      "Добавь информацию о себе и фото"
-    ]
+    title: t("step1Title"),
+    description: t("step1Desc"),
+    details: t("step1Items") || []
   },
   {
     number: "02",
     icon: Search,
-    title: "Найди партнёра",
-    description: "Наш алгоритм подберёт людей с взаимными интересами. Ты учишь X, хочешь Y — мы найдём того, кто учит Y и хочет X.",
-    details: [
-      "Умный поиск по навыкам и интересам",
-      "Система совпадений по взаимным потребностям",
-      "Фильтры по рейтингу, формату и доступности",
-      "Мгновенные уведомления о новых совпадениях"
-    ]
+    title: t("step2Title"),
+    description: t("step2Desc"),
+    details: t("step2Items") || []
   },
   {
     number: "03",
     icon: MessageSquare,
-    title: "Договорись о сессии",
-    description: "Свяжись с партнёром через чат, обсуди детали и назначь удобное время для обмена знаниями.",
-    details: [
-      "Встроенный чат для обсуждения",
-      "Календарь для планирования сессий",
-      "Выбор формата: онлайн или офлайн",
-      "Возможность обмена материалами"
-    ]
+    title: t("step3Title"),
+    description: t("step3Desc"),
+    details: t("step3Items") || []
   },
   {
     number: "04",
     icon: Video,
-    title: "Проведи сессию",
-    description: "Встречайтесь онлайн через видеочат или офлайн. Делитесь знаниями и учитесь новому.",
-    details: [
-      "Встроенный видеочат для онлайн-сессий",
-      "Таймер для контроля времени",
-      "Возможность записи сессии",
-      "Обмен файлами и ссылками в реальном времени"
-    ]
+    title: t("step4Title"),
+    description: t("step4Desc"),
+    details: t("step4Items") || []
   },
   {
     number: "05",
     icon: Star,
-    title: "Получи отзыв",
-    description: "После сессии оставьте друг другу отзывы. Развивай репутацию и становись экспертом сообщества.",
-    details: [
-      "Система рейтинга от 1 до 5 звёзд",
-      "Текстовые отзывы о сессии",
-      "Накопление репутационных очков",
-      "Бейджи и достижения за активность"
-    ]
+    title: t("step5Title"),
+    description: t("step5Desc"),
+    details: t("step5Items") || []
   }
 ];
 
-const benefits = [
-  "Бесплатный обмен знаниями без денежных затрат",
-  "Практика с реальными людьми, а не по учебникам",
-  "Расширение сети контактов и единомышленников",
-  "Гибкий график — учись когда удобно",
-  "Развитие навыков преподавания",
-  "Получение честной обратной связи"
-];
+const benefits = (t: any) => t("benefitsList") || [];
 
 const HowItWorks = () => {
+  const { t } = useLanguage();
+  const currentSteps = steps(t);
+  const currentBenefits = benefits(t);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -99,14 +73,13 @@ const HowItWorks = () => {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
               <FlowIcon size={16} className="text-primary" />
-              Простой процесс
+              {t("simpleProcess")}
             </span>
             <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
-              Как работает <span className="text-gradient">Skillflow</span>
+              {t("howItWorksTitle")} <span className="text-gradient">Skillflow</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              Пять простых шагов от регистрации до первой сессии обмена навыками. 
-              Начни учиться и делиться знаниями уже сегодня.
+              {t("howItWorksSubtitle")}
             </p>
           </motion.div>
         </div>
@@ -116,7 +89,7 @@ const HowItWorks = () => {
       <section className="py-16 px-4">
         <div className="container mx-auto">
           <div className="space-y-16">
-            {steps.map((step, index) => (
+            {currentSteps.map((step, index) => (
               <motion.div
                 key={step.number}
                 initial={{ opacity: 0, y: 30 }}
@@ -173,15 +146,15 @@ const HowItWorks = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl font-bold text-foreground mb-4">
-              Почему обмен навыками?
+              {t("whySkillExchange")}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Преимущества бартерного обучения перед традиционными курсами
+              {t("whySkillExchangeDesc")}
             </p>
           </motion.div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {benefits.map((benefit, index) => (
+            {currentBenefits.map((benefit, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -209,7 +182,7 @@ const HowItWorks = () => {
               <span className="font-bold text-foreground">Skillflow</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2026 Skillflow. Все права защищены.
+              © 2026 Skillflow. {t("allRightsReserved")}
             </p>
           </div>
         </div>

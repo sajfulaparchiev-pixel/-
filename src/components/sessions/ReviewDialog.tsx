@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateContent } from "@/services/moderationService";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 interface ReviewDialogProps {
@@ -15,6 +16,7 @@ interface ReviewDialogProps {
 }
 
 const ReviewDialog = ({ open, onOpenChange, onSubmit, partnerName }: ReviewDialogProps) => {
+  const { t } = useLanguage();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -22,14 +24,14 @@ const ReviewDialog = ({ open, onOpenChange, onSubmit, partnerName }: ReviewDialo
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      toast.error("Пожалуйста, выберите оценку");
+      toast.error(t("chooseRatingError"));
       return;
     }
 
     if (comment.trim()) {
       const mod = validateContent(comment);
       if (!mod.isValid) {
-        toast.error(mod.error);
+        toast.error(t(mod.error as any));
         return;
       }
     }
@@ -47,13 +49,27 @@ const ReviewDialog = ({ open, onOpenChange, onSubmit, partnerName }: ReviewDialo
     }
   };
 
+  const renderDescription = () => {
+    const text = t("rateDesc");
+    const parts = text.split("{name}");
+    if (parts.length < 2) return text;
+    
+    return (
+      <>
+        {parts[0]}
+        <strong className="text-foreground">{partnerName}</strong>
+        {parts[1]}
+      </>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={(val) => !submitting && onOpenChange(val)}>
       <DialogContent className="sm:max-w-md rounded-3xl p-6 border-none shadow-2xl">
         <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-2xl font-bold">Оцените обмен</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">{t("rateExchange")}</DialogTitle>
           <DialogDescription className="text-[15px] pt-1">
-            Как прошло ваше занятие с <strong>{partnerName}</strong>? Ваша обратная связь помогает сообществу!
+            {renderDescription()}
           </DialogDescription>
         </DialogHeader>
 
@@ -79,18 +95,18 @@ const ReviewDialog = ({ open, onOpenChange, onSubmit, partnerName }: ReviewDialo
             ))}
           </div>
           <p className="font-bold text-accent min-h-[1.5rem]">
-            {rating === 1 && "Ужасно"}
-            {rating === 2 && "Плохо"}
-            {rating === 3 && "Нормально"}
-            {rating === 4 && "Хорошо"}
-            {rating === 5 && "Отлично!"}
+            {rating === 1 && t("rating1")}
+            {rating === 2 && t("rating2")}
+            {rating === 3 && t("rating3")}
+            {rating === 4 && t("rating4")}
+            {rating === 5 && t("rating5")}
           </p>
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Ваш отзыв (необязательно)</p>
+          <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t("yourReview")}</p>
           <Textarea
-            placeholder="Расскажите подробнее о вашем опыте..."
+            placeholder={t("reviewPlaceholder")}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             className="min-h-[100px] bg-secondary/30 border-transparent focus:border-primary/30 rounded-xl resize-none p-4"
@@ -106,10 +122,10 @@ const ReviewDialog = ({ open, onOpenChange, onSubmit, partnerName }: ReviewDialo
             {submitting ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Сохранение...
+                {t("processing")}
               </>
             ) : (
-              "Завершить сессию"
+              t("completeSession")
             )}
           </Button>
         </DialogFooter>

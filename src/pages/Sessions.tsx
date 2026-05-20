@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
+import { motion } from "motion/react";
 import Header from "@/components/layout/Header";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ interface Exchange {
 const Sessions = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [loading, setLoading] = useState(true);
   const [chat, setChat] = useState<{ open: boolean; name: string; id: string } | null>(null);
@@ -96,24 +96,27 @@ const Sessions = () => {
       .update({ status })
       .eq("id", ex.id);
     if (error) {
-      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+      if (error.code === '20' || error.message?.includes('aborted') || error.message?.includes('signal is aborted')) {
+        return;
+      }
+      toast({ title: t("error"), description: error.message, variant: "destructive" });
       return;
     }
     // Notify initiator
     await supabase.from("notifications").insert({
       user_id: ex.from_user_id,
       type: status === "accepted" ? "exchange_accepted" : "exchange_rejected",
-      title: status === "accepted" ? "Запрос принят!" : "Запрос отклонён",
+      title: status === "accepted" ? t("requestAccepted") : t("requestRejected"),
       message:
         status === "accepted"
-          ? `${ex.to_user_name} принял(а) запрос на обмен «${ex.skill_title}». Можете начать общение.`
-          : `${ex.to_user_name} отклонил(а) запрос на обмен «${ex.skill_title}».`,
-      from_user_name: ex.to_user_name,
+          ? t("requestAcceptedMsg").replace("{name}", ex.to_user_name || t("partner")).replace("{title}", ex.skill_title || t("skill"))
+          : t("requestRejectedMsg").replace("{name}", ex.to_user_name || t("partner")).replace("{title}", ex.skill_title || t("skill")),
+      from_user_name: ex.to_user_name || t("partner"),
       related_skill_id: ex.skill_id,
     });
     toast({
-      title: status === "accepted" ? "Принято" : "Отклонено",
-      description: status === "accepted" ? "Откройте чат, чтобы договориться о деталях" : undefined,
+      title: status === "accepted" ? t("accepted") : t("rejected"),
+      description: status === "accepted" ? t("acceptedExchangeDesc") : undefined,
     });
   };
 
@@ -138,19 +141,39 @@ const Sessions = () => {
           exchange_id: reviewTarget.id,
           target_user_id: partnerId,
           author_id: user?.id,
-          author_name: user?.user_metadata?.name || "Пользователь",
+          author_name: user?.user_metadata?.name || t("user"),
           rating: rating,
           text: comment
         });
 
       if (reviewError) throw reviewError;
 
-      toast({ title: "Сессия завершена", description: "Спасибо за ваш отзыв!" });
+      toast({ title: t("sessionCompletedToast"), description: t("thanksForReview") });
       fetchExchanges();
     } catch (err: any) {
-      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+      if (err.name === 'AbortError' || err.message?.includes('aborted') || err.message?.includes('signal is aborted')) {
+        return;
+      }
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
     }
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background pb-24 md:pb-0">
+        <Header />
+        <main className="container mx-auto px-4 pt-32 max-w-4xl text-center">
+          <BookOpen className="w-16 h-16 text-muted-foreground opacity-20 mx-auto mb-6" />
+          <h1 className="text-2xl font-bold mb-3">{t("loginToSeeSessions")}</h1>
+          <p className="text-muted-foreground mb-8">{t("sessionsAppearAfterExchange")}</p>
+          <Button variant="hero" size="lg" className="rounded-2xl font-bold px-8" asChild>
+            <Link to="/auth?mode=login">{t("signIn")} / {t("registration")}</Link>
+          </Button>
+        </main>
+        <MobileNav />
+      </div>
+    );
+  }
 
   const incoming = exchanges.filter((e) => e.to_user_id === user?.id && e.status === "pending");
   const outgoing = exchanges.filter((e) => e.from_user_id === user?.id && e.status === "pending");
@@ -159,7 +182,7 @@ const Sessions = () => {
   const completed = exchanges.filter((e) => e.status === "completed");
 
   const renderExchange = (ex: Exchange, type: "incoming" | "outgoing" | "accepted" | "archived" | "completed") => {
-    const partnerName = ex.from_user_id === user?.id ? ex.to_user_name : ex.from_user_name;
+    const partnerName = ex.from_user_id === user?.id ? (ex.to_user_name || t("partner")) : (ex.from_user_name || t("partner"));
     const partnerId = ex.from_user_id === user?.id ? ex.to_user_id : ex.from_user_id;
     return (
       <motion.div
@@ -178,22 +201,22 @@ const Sessions = () => {
               to={`/user/${partnerId}`}
               className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors inline-block"
             >
-              {type === "incoming" ? "От: " : type === "outgoing" ? "Кому: " : "Партнёр: "}
+              {type === "incoming" ? `${t("from")}: ` : type === "outgoing" ? `${t("to")}: ` : `${t("partner")}: `}
               {partnerName}
             </Link>
           </div>
           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md shrink-0">
-            {new Date(ex.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
+            {new Date(ex.created_at).toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "short" })}
           </span>
         </div>
 
         {type === "incoming" && (
           <div className="flex gap-3">
             <Button className="flex-1 rounded-xl h-11 font-bold" onClick={() => respond(ex, "accepted")}>
-              <Check className="w-4 h-4 mr-2" /> Принять
+              <Check className="w-4 h-4 mr-2" /> {t("accept")}
             </Button>
             <Button variant="outline" className="flex-1 rounded-xl h-11 font-bold" onClick={() => respond(ex, "rejected")}>
-              <X className="w-4 h-4 mr-2" /> Отклонить
+              <X className="w-4 h-4 mr-2" /> {t("decline")}
             </Button>
           </div>
         )}
@@ -201,7 +224,7 @@ const Sessions = () => {
         {type === "outgoing" && (
           <div className="flex items-center gap-2 p-3 bg-secondary/30 rounded-xl">
              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-             <p className="text-sm font-medium text-muted-foreground">Ожидание ответа партнера…</p>
+             <p className="text-sm font-medium text-muted-foreground">{t("pending") }...</p>
           </div>
         )}
 
@@ -212,14 +235,14 @@ const Sessions = () => {
               className="flex-1 h-11 rounded-xl font-bold bg-background hover:bg-secondary"
               onClick={() => setChat({ open: true, name: partnerName, id: partnerId })}
             >
-              <MessageCircle className="w-4 h-4 mr-2" /> Чат
+              <MessageCircle className="w-4 h-4 mr-2" /> {t("call")}
             </Button>
             <Button
               variant="hero"
               className="flex-1 h-11 rounded-xl font-bold shadow-lg shadow-primary/10"
               onClick={() => setReviewTarget(ex)}
             >
-              <CheckCircle2 className="w-4 h-4 mr-2" /> Завершить обмен
+              <CheckCircle2 className="w-4 h-4 mr-2" /> {t("completeExchange")}
             </Button>
           </div>
         )}
@@ -246,14 +269,14 @@ const Sessions = () => {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Сессия успешно завершена</p>
+              <p className="text-sm text-muted-foreground">{t("completed")}</p>
             )}
           </div>
         )}
 
         {type === "archived" && (
           <p className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-xl inline-block">
-            Запрос был отклонён
+            {t("rejected")}
           </p>
         )}
       </motion.div>
@@ -268,15 +291,15 @@ const Sessions = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="mb-10">
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 tracking-tight">
-              Обмен <span className="text-primary font-black uppercase">навыками</span>
+              {t("mySessions")}
             </h1>
-            <p className="text-muted-foreground text-base max-w-md">Управляйте вашими сессиями, обсуждайте детали и стройте репутацию.</p>
+            <p className="text-muted-foreground text-base max-w-md">{t("manageYourSessions")}</p>
           </div>
 
           <Tabs defaultValue="incoming" className="space-y-8">
             <TabsList className="w-full justify-start bg-secondary/30 p-1.5 rounded-2xl overflow-x-auto h-auto gap-2 border border-border/50">
               <TabsTrigger value="incoming" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-lg font-bold gap-2 transition-all">
-                <Inbox className="w-4 h-4" /> Входящие
+                <Inbox className="w-4 h-4" /> {t("incoming")}
                 {incoming.length > 0 && (
                   <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black">
                     {incoming.length}
@@ -284,82 +307,82 @@ const Sessions = () => {
                 )}
               </TabsTrigger>
               <TabsTrigger value="outgoing" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-lg font-bold gap-2 transition-all">
-                <Send className="w-4 h-4" /> Отправленные
+                <Send className="w-4 h-4" /> {t("outgoing")}
               </TabsTrigger>
               <TabsTrigger value="active" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-lg font-bold gap-2 transition-all">
-                <Calendar className="w-4 h-4" /> Активные
+                <Calendar className="w-4 h-4" /> {t("active")}
               </TabsTrigger>
               <TabsTrigger value="completed" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-lg font-bold gap-2 transition-all">
-                <CheckCircle2 className="w-4 h-4" /> Завершенные
+                <CheckCircle2 className="w-4 h-4" /> {t("completed")}
               </TabsTrigger>
-              <TabsTrigger value="archive" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-lg font-bold gap-2 transition-all">Архив</TabsTrigger>
+              <TabsTrigger value="archive" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-lg font-bold gap-2 transition-all">{t("archive")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="incoming" className="space-y-4">
-              {loading ? (
-                <div className="flex flex-col items-center py-20 gap-4">
-                  <Loader2 className="w-10 h-10 animate-spin text-primary opacity-50" />
-                  <p className="text-muted-foreground animate-pulse font-medium">Загрузка запросов...</p>
-                </div>
-              ) : incoming.length === 0 ? (
-                <div className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed border-border/50">
-                  <Inbox className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-6" />
-                  <h3 className="text-xl font-bold text-foreground mb-2">Входящих запросов нет</h3>
-                  <p className="text-muted-foreground max-w-xs mx-auto">Здесь появятся предложения обмена от других пользователей.</p>
-                </div>
-              ) : (
-                incoming.map((e) => renderExchange(e, "incoming"))
-              )}
-            </TabsContent>
-
-            <TabsContent value="outgoing" className="space-y-4">
-              {outgoing.length === 0 ? (
-                <div className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed border-border/50">
-                  <Send className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-6" />
-                  <h3 className="text-xl font-bold text-foreground mb-2">Вы пока ничего не отправили</h3>
-                  <p className="text-muted-foreground mb-8">Найдите мастера, который может вас научить чему-то новому!</p>
-                  <Button variant="hero" size="lg" className="rounded-2xl font-bold px-8" asChild>
-                    <Link to="/feed">Открыть ленту</Link>
-                  </Button>
-                </div>
-              ) : (
-                outgoing.map((e) => renderExchange(e, "outgoing"))
-              )}
-            </TabsContent>
-
-            <TabsContent value="active" className="space-y-4">
-              {accepted.length === 0 ? (
-                <div className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed border-border/50">
-                  <BookOpen className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-6" />
-                  <h3 className="text-xl font-bold text-foreground mb-2">Активных обменов нет</h3>
-                  <p className="text-muted-foreground">Все подтвержденные обмены будут отображаться здесь.</p>
-                </div>
-              ) : (
-                accepted.map((e) => renderExchange(e, "accepted"))
-              )}
-            </TabsContent>
-
-            <TabsContent value="completed" className="space-y-4">
-              {completed.length === 0 ? (
-                <div className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed border-border/50">
-                  <CheckCircle2 className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-6" />
-                  <h3 className="text-xl font-bold text-foreground mb-2">История пуста</h3>
-                  <p className="text-muted-foreground">Завершенные сессии с оценками сохраняются здесь.</p>
-                </div>
-              ) : (
-                completed.map((e) => renderExchange(e, "completed"))
-              )}
-            </TabsContent>
-
-            <TabsContent value="archive" className="space-y-4">
-              {archived.length === 0 ? (
-                 <div className="text-center py-20">
-                  <p className="text-muted-foreground italic">В архиве пока ничего нет</p>
+               {loading ? (
+                 <div className="flex flex-col items-center py-20 gap-4">
+                   <Loader2 className="w-10 h-10 animate-spin text-primary opacity-50" />
+                   <p className="text-muted-foreground animate-pulse font-medium">{t("loadingRequests")}</p>
                  </div>
-              ) : (
-                archived.map((e) => renderExchange(e, "archived"))
-              )}
-            </TabsContent>
+               ) : incoming.length === 0 ? (
+                 <div className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed border-border/50">
+                   <Inbox className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-6" />
+                   <h3 className="text-xl font-bold text-foreground mb-2">{t("noIncoming")}</h3>
+                   <p className="text-muted-foreground max-w-xs mx-auto">{t("findSkillsAndPlan")}</p>
+                 </div>
+               ) : (
+                 incoming.map((e) => renderExchange(e, "incoming"))
+               )}
+             </TabsContent>
+ 
+             <TabsContent value="outgoing" className="space-y-4">
+               {outgoing.length === 0 ? (
+                 <div className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed border-border/50">
+                   <Send className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-6" />
+                   <h3 className="text-xl font-bold text-foreground mb-2">{t("noOutgoing")}</h3>
+                   <p className="text-muted-foreground mb-8">{t("findSkills")}</p>
+                   <Button variant="hero" size="lg" className="rounded-2xl font-bold px-8" asChild>
+                     <Link to="/feed">{t("feed")}</Link>
+                   </Button>
+                 </div>
+               ) : (
+                 outgoing.map((e) => renderExchange(e, "outgoing"))
+               )}
+             </TabsContent>
+ 
+             <TabsContent value="active" className="space-y-4">
+               {accepted.length === 0 ? (
+                 <div className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed border-border/50">
+                   <BookOpen className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-6" />
+                   <h3 className="text-xl font-bold text-foreground mb-2">{t("noActive")}</h3>
+                   <p className="text-muted-foreground">{t("acceptedExchangeDesc")}</p>
+                 </div>
+               ) : (
+                 accepted.map((e) => renderExchange(e, "accepted"))
+               )}
+             </TabsContent>
+ 
+             <TabsContent value="completed" className="space-y-4">
+               {completed.length === 0 ? (
+                 <div className="text-center py-20 bg-secondary/10 rounded-3xl border border-dashed border-border/50">
+                   <CheckCircle2 className="w-16 h-16 text-muted-foreground opacity-30 mx-auto mb-6" />
+                   <h3 className="text-xl font-bold text-foreground mb-2">{t("noCompleted")}</h3>
+                   <p className="text-muted-foreground">{t("historyDescription")}</p>
+                 </div>
+               ) : (
+                 completed.map((e) => renderExchange(e, "completed"))
+               )}
+             </TabsContent>
+ 
+             <TabsContent value="archive" className="space-y-4">
+               {archived.length === 0 ? (
+                  <div className="text-center py-20">
+                   <p className="text-muted-foreground italic">{t("noResults")}</p>
+                  </div>
+               ) : (
+                 archived.map((e) => renderExchange(e, "archived"))
+               )}
+             </TabsContent>
           </Tabs>
         </motion.div>
       </main>
@@ -367,7 +390,7 @@ const Sessions = () => {
       {chat && (
         <ChatDialog
           open={chat.open}
-          onOpenChange={(o) => setChat(o ? chat : null)}
+          onOpenChange={(open) => !open && setChat(null)}
           recipientName={chat.name}
           recipientId={chat.id}
         />
@@ -377,7 +400,7 @@ const Sessions = () => {
         <ReviewDialog
           open={!!reviewTarget}
           onOpenChange={(o) => !o && setReviewTarget(null)}
-          partnerName={reviewTarget.from_user_id === user?.id ? reviewTarget.to_user_name : reviewTarget.from_user_name}
+          partnerName={reviewTarget.from_user_id === user?.id ? (reviewTarget.to_user_name || t("partner")) : (reviewTarget.from_user_name || t("partner"))}
           onSubmit={handleCompleteSession}
         />
       )}

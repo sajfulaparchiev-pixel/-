@@ -1,42 +1,53 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Review {
   id: string;
-  sessionId: string;
-  author: string;
-  text: string;
   rating: number;
-  skill: string;
+  text: string;
+  author: string;
   date: string;
+  skillTitle?: string;
 }
 
-const REVIEWS_KEY = "skillflow_reviews";
-
 export const useReviews = () => {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchReviews = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("*")
+        .eq("target_user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const mapped: Review[] = data.map((r: any) => ({
+          id: r.id,
+          rating: r.rating,
+          text: r.text,
+          author: r.author_name || "Anonymous",
+          date: new Date(r.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
+        }));
+        setReviews(mapped);
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(REVIEWS_KEY);
-    if (stored) {
-      setReviews(JSON.parse(stored));
-    }
-  }, []);
+    fetchReviews();
+  }, [fetchReviews]);
 
-  const addReview = (review: Omit<Review, "id" | "date">) => {
-    const newReview: Review = {
-      ...review,
-      id: crypto.randomUUID(),
-      date: new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
-    };
-    const updated = [newReview, ...reviews];
-    setReviews(updated);
-    localStorage.setItem(REVIEWS_KEY, JSON.stringify(updated));
-    return newReview;
-  };
-
-  const getReviewBySessionId = (sessionId: string) => {
-    return reviews.find((r) => r.sessionId === sessionId);
-  };
-
-  return { reviews, addReview, getReviewBySessionId };
+  return { reviews, loading, refresh: fetchReviews };
 };

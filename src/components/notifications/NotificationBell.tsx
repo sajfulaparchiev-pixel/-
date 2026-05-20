@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Notification {
   id: string;
@@ -25,6 +26,7 @@ interface Notification {
 
 const NotificationBell = () => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -116,11 +118,11 @@ const NotificationBell = () => {
     const now = new Date();
     const diff = now.getTime() - d.getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "только что";
-    if (mins < 60) return `${mins} мин назад`;
+    if (mins < 1) return t("justNow");
+    if (mins < 60) return t("minAgo").replace("{n}", mins.toString());
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} ч назад`;
-    return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+    if (hours < 24) return t("hourAgo").replace("{n}", hours.toString());
+    return d.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "short" });
   };
 
   return (
@@ -147,20 +149,20 @@ const NotificationBell = () => {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="p-3 border-b border-border flex items-center justify-between">
-          <h3 className="font-semibold text-sm">Уведомления</h3>
+          <h3 className="font-semibold text-sm">{t("notificationsTitle")}</h3>
           {notifications.length > 0 && (
             <button
               onClick={markAllRead}
               className="text-xs text-primary hover:underline"
             >
-              Прочитать все
+              {t("readAll")}
             </button>
           )}
         </div>
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground text-sm">
-              Нет уведомлений
+              {t("noNotifications")}
             </div>
           ) : (
             notifications.map((n) => (

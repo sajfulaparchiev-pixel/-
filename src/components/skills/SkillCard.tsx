@@ -20,6 +20,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export interface Skill {
   id: string;
   title: string;
@@ -34,6 +36,10 @@ export interface Skill {
     avatar?: string;
     rating: number;
     sessionsCount: number;
+    bio?: string;
+    location?: string;
+    telegram?: string;
+    email?: string;
   };
   wantedSkills?: string[];
 }
@@ -44,15 +50,16 @@ interface SkillCardProps {
   isOwner?: boolean;
 }
 
-const levelLabels: Record<string, string> = {
-  beginner: "Начинающий",
-  intermediate: "Средний", 
-  expert: "Эксперт",
-};
-
 const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0, isOwner = false }, ref) => {
+  const { t } = useLanguage();
   const [dialogOpen, setDialogOpen] = useState(false);
   const { deleteSkill } = useSkills();
+
+  const levelLabels: Record<string, string> = {
+    beginner: t("beginner"),
+    intermediate: t("intermediate"), 
+    expert: t("expert"),
+  };
 
   return (
     <motion.div
@@ -65,41 +72,11 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
       {/* Decorative background glow on hover - only visible on devices with hover */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none hidden sm:block" />
 
-      {/* Delete button for owner */}
-      {isOwner && (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3 h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 z-10"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Удалить навык?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Навык «{skill.title}» будет удалён безвозвратно.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Отмена</AlertDialogCancel>
-              <AlertDialogAction onClick={() => deleteSkill(skill.id)}>
-                Удалить
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-
       {/* User Info Header */}
       {skill.userId ? (
         <Link
           to={`/user/${skill.userId}`}
           className="flex items-center gap-3 mb-5 group/user rounded-xl p-1.5 hover:bg-secondary/80 transition-all relative z-10"
-          onClick={(e) => e.stopPropagation()}
         >
           <div className="relative">
             <UserAvatar
@@ -122,7 +99,7 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
                 <span>{skill.user.rating > 0 ? skill.user.rating.toFixed(1) : "—"}</span>
               </div>
               <span className="opacity-50">•</span>
-              <span>{skill.user.sessionsCount} сессий</span>
+              <span>{t("sessionsCount").replace("{n}", skill.user.sessionsCount.toString())}</span>
             </div>
           </div>
         </Link>
@@ -140,7 +117,7 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
                 <span>{skill.user.rating > 0 ? skill.user.rating.toFixed(1) : "—"}</span>
               </div>
               <span className="opacity-50">•</span>
-              <span>{skill.user.sessionsCount} сессий</span>
+              <span>{t("sessionsCount").replace("{n}", skill.user.sessionsCount.toString())}</span>
             </div>
           </div>
         </div>
@@ -155,7 +132,7 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
             </h3>
             {isOwner && (
               <Badge variant="outline" className="text-[10px] uppercase tracking-wider bg-primary/5 text-primary border-primary/20 shrink-0">
-                Мой
+                {t("mySkill")}
               </Badge>
             )}
           </div>
@@ -170,20 +147,20 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
             {skill.format === "online" ? (
               <>
                 <Video className="w-3.5 h-3.5 text-blue-500" />
-                Онлайн
+                {t("onlineFormat").split(" ")[0]}
               </>
             ) : skill.format === "offline" ? (
               <>
                 <MapPin className="w-3.5 h-3.5 text-orange-500" />
-                Офлайн
+                {t("offlineFormat").split(" ")[0]}
               </>
             ) : (
-              "Любой формат"
+              t("bothFormats")
             )}
           </Badge>
           <Badge variant="secondary" className="gap-1.5 py-1 px-2.5 text-[11px] font-medium bg-secondary/50 hover:bg-secondary border-transparent">
             <Clock className="w-3.5 h-3.5 text-green-500" />
-            {skill.duration} мин
+            {skill.duration} {t("min")}
           </Badge>
           {skill.level && (
             <Badge variant="secondary" className="py-1 px-2.5 text-[11px] font-medium bg-secondary/50 hover:bg-secondary border-transparent">
@@ -196,7 +173,7 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
         {skill.wantedSkills && skill.wantedSkills.length > 0 && (
           <div className="pt-4 border-t border-border/30">
             <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-1.5">
-              <span>Взамен:</span>
+              <span>{t("inExchange")}</span>
               <div className="h-[1px] flex-1 bg-border/20" />
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -218,15 +195,46 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
         )}
       </div>
 
-      {/* Action Button */}
-      <Button
-        variant="ghost"
-        className="w-full mt-6 h-11 text-sm font-semibold rounded-xl bg-secondary/30 hover:bg-primary hover:text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300 relative z-10"
-        onClick={() => setDialogOpen(true)}
-      >
-        <span>Посмотреть детали</span>
-        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform" />
-      </Button>
+      {/* Action Buttons Row */}
+      <div className="flex gap-2 mt-6 relative z-10">
+        <Button
+          variant="ghost"
+          className="flex-1 h-11 text-sm font-semibold rounded-xl bg-secondary/30 hover:bg-primary hover:text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300"
+          onClick={() => setDialogOpen(true)}
+        >
+          <span>{t("viewDetails")}</span>
+          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform" />
+        </Button>
+
+        {isOwner && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-11 w-11 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-border/50 shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("deleteSkillConfirm")}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("deleteSkillDesc").replace("{title}", skill.title)}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => deleteSkill(skill.id)}>
+                  {t("delete")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
 
       <SkillDetailDialog
         skill={skill}

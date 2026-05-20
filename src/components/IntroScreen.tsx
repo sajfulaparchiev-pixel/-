@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useState } from "react";
 import FlowIcon from "@/components/ui/FlowIcon";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface IntroScreenProps {
   onComplete: () => void;
@@ -8,6 +9,7 @@ interface IntroScreenProps {
 
 const IntroScreen = ({ onComplete }: IntroScreenProps) => {
   const [phase, setPhase] = useState<"icon" | "text" | "fade">("icon");
+  const { t } = useLanguage();
 
   useEffect(() => {
     const textTimer = setTimeout(() => setPhase("text"), 400);
@@ -106,7 +108,7 @@ const IntroScreen = ({ onComplete }: IntroScreenProps) => {
                     transition={{ delay: 0.3, duration: 0.5 }}
                     className="text-primary-foreground/80 text-lg md:text-xl"
                   >
-                    Биржа талантов и знаний
+                    {t("marketOfTalents")}
                   </motion.p>
                 </motion.div>
               )}

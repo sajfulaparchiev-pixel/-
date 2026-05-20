@@ -15,6 +15,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAccentColor, palettes } from "@/contexts/ThemeContext";
+import { Palette } from "lucide-react";
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
@@ -25,16 +27,18 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const { accentColor, setAccentColor } = useAccentColor();
+
   const inviteLink = `${window.location.origin}/auth?mode=signup`;
 
   const copyInviteLink = async () => {
     try {
       await navigator.clipboard.writeText(inviteLink);
       setCopied(true);
-      toast({ title: t("saved"), description: "Ссылка скопирована!" });
+      toast({ title: t("saved"), description: t("linkCopied") });
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast({ title: t("error"), description: "Не удалось скопировать", variant: "destructive" });
+      toast({ title: t("error"), description: t("couldNotCopy"), variant: "destructive" });
     }
   };
 
@@ -138,6 +142,57 @@ const Settings = () => {
             </CardContent>
           </Card>
 
+          {/* Accent Color Palettes */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="w-5 h-5 text-primary" />
+                {t("accentColorTitle")}
+              </CardTitle>
+              <CardDescription>{t("accentColorDescription")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {(Object.keys(palettes) as Array<keyof typeof palettes>).map((key) => {
+                  const palette = palettes[key];
+                  const isActive = accentColor === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setAccentColor(key)}
+                      className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-300 group ${
+                        isActive 
+                          ? "border-primary bg-primary/5 shadow-md scale-[1.02]" 
+                          : "border-border hover:border-primary/30 hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="relative w-full aspect-square sm:aspect-video rounded-lg overflow-hidden shadow-inner flex">
+                        <div 
+                          className="flex-1" 
+                          style={{ backgroundColor: `hsl(${palette.primary})` }}
+                        />
+                        <div 
+                          className="flex-1 opacity-80" 
+                          style={{ backgroundColor: `hsl(${palette.secondary})` }}
+                        />
+                        {isActive && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px]">
+                            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center shadow-lg transform scale-110">
+                              <Check className="w-4 h-4" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <span className={`text-sm font-medium transition-colors ${isActive ? "text-primary" : "text-foreground group-hover:text-primary/70"}`}>
+                        {t(key)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Notifications */}
           <Card>
             <CardHeader>
@@ -150,7 +205,7 @@ const Settings = () => {
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5 min-w-0">
-                  <Label className="text-base">{t("pushNotifications")} в приложении</Label>
+                  <Label className="text-base">{t("pushNotifications")} {t("inApp")}</Label>
                   <p className="text-sm text-muted-foreground">{t("pushDescription")}</p>
                 </div>
                 <Switch checked={notifications} onCheckedChange={(v) => handleToggle("notifications", setNotifications, v)} />
@@ -222,9 +277,9 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Share2 className="w-5 h-5" />
-                Пригласить друзей
+                {t("inviteFriends")}
               </CardTitle>
-              <CardDescription>Поделитесь ссылкой, чтобы пригласить друзей в Skillflow</CardDescription>
+              <CardDescription>{t("shareLink")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
@@ -243,14 +298,14 @@ const Settings = () => {
                   size="sm"
                   onClick={() => {
                     if (navigator.share) {
-                      navigator.share({ title: "Skillflow", text: "Присоединяйся к Skillflow — платформе обмена навыками!", url: inviteLink });
+                      navigator.share({ title: "Skillflow", text: t("joinSkillflow"), url: inviteLink });
                     } else {
                       copyInviteLink();
                     }
                   }}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
-                  Поделиться
+                  {t("share")}
                 </Button>
               </div>
             </CardContent>
