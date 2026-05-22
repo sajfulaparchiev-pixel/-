@@ -6,6 +6,7 @@ type Language = "ru" | "en";
 const translations = {
   ru: {
     // Header & Nav
+    lang: "ru",
     skills: "Навыки",
     howItWorks: "Как это работает",
     aboutUs: "О нас",
@@ -299,6 +300,7 @@ const translations = {
     thanksForReview: "Спасибо за ваш отзыв!",
 
     // SkillCard
+    published: "Опубликовано",
     sessionsCount: "{n} сессий",
     mySkill: "Мой",
     inExchange: "Взамен:",
@@ -602,6 +604,7 @@ const translations = {
   },
   en: {
     // Header & Nav
+    lang: "en",
     skills: "Skills",
     howItWorks: "How it works",
     aboutUs: "About us",
@@ -895,6 +898,7 @@ const translations = {
     thanksForReview: "Thanks for your review!",
 
     // SkillCard
+    published: "Published",
     sessionsCount: "{n} sessions",
     mySkill: "My",
     inExchange: "In exchange:",

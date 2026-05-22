@@ -37,17 +37,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Safety fallback: ensure loading is always turned off after a timeout
     const fallbackTimer = setTimeout(() => {
       if (isMounted) setLoading(false);
-    }, 5000);
+    }, 15000);
 
     // Get initial session with built-in retry and timeout
-    const getInitialSession = async (retries = 2) => {
+    const getInitialSession = async (retries = 3) => {
       try {
         console.log("Attempting to load auth session...");
         
-        // Add a 4 second timeout for getSession call itself
+        // Add a 12 second timeout for getSession call itself
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Supabase auth timeout")), 4000)
+          setTimeout(() => reject(new Error("Supabase auth timeout")), 12000)
         );
         
         const { data: { session }, error } = await Promise.race([

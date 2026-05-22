@@ -20,6 +20,7 @@ import { useExchangeRequest } from "@/contexts/ExchangeRequestContext";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getCategoryKey } from "@/utils/categories";
+import { formatRelativeDate } from "@/utils/date";
 
 interface SkillDetailDialogProps {
   skill: Skill | null;
@@ -131,6 +132,15 @@ const SkillDetailDialog = ({ skill, open, onOpenChange }: SkillDetailDialogProps
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>{t("sessionsCount").replace("{n}", skill.user.sessionsCount.toString())}</span>
                 </div>
+                {skill.createdAt && (
+                  <>
+                    <span className="opacity-30">•</span>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{formatRelativeDate(skill.createdAt, t("lang" as any))}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {(skill.user.location || skill.user.telegram || skill.user.email) && (

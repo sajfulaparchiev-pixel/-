@@ -67,6 +67,7 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
           category: s.category,
           wantedSkills: s.wanted_skills || [],
           userId: s.user_id,
+          createdAt: s.created_at,
           user: {
             name: s.user_name || t("user"),
             avatar: s.user_avatar || undefined,
