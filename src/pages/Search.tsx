@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import Header from "@/components/layout/Header";
 import MobileNav from "@/components/layout/MobileNav";
 import SkillCard from "@/components/skills/SkillCard";

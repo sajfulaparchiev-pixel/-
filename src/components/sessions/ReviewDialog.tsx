@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { validateContent } from "@/services/moderationService";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
@@ -26,14 +25,6 @@ const ReviewDialog = ({ open, onOpenChange, onSubmit, partnerName }: ReviewDialo
     if (rating === 0) {
       toast.error(t("chooseRatingError"));
       return;
-    }
-
-    if (comment.trim()) {
-      const mod = validateContent(comment);
-      if (!mod.isValid) {
-        toast.error(t(mod.error as any));
-        return;
-      }
     }
 
     setSubmitting(true);

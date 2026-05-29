@@ -1,5 +1,5 @@
 import { useState, forwardRef } from "react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { Star, Clock, Video, MapPin, ArrowRight, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { formatRelativeDate } from "@/utils/date";
 
 export interface Skill {
   id: string;
@@ -43,7 +42,6 @@ export interface Skill {
     email?: string;
   };
   wantedSkills?: string[];
-  createdAt?: string;
 }
 
 interface SkillCardProps {
@@ -102,12 +100,6 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
               </div>
               <span className="opacity-50">•</span>
               <span>{t("sessionsCount").replace("{n}", skill.user.sessionsCount.toString())}</span>
-              {skill.createdAt && (
-                <>
-                  <span className="opacity-50">•</span>
-                  <span>{formatRelativeDate(skill.createdAt, t("lang" as any))}</span>
-                </>
-              )}
             </div>
           </div>
         </Link>
@@ -126,12 +118,6 @@ const SkillCard = forwardRef<HTMLDivElement, SkillCardProps>(({ skill, index = 0
               </div>
               <span className="opacity-50">•</span>
               <span>{t("sessionsCount").replace("{n}", skill.user.sessionsCount.toString())}</span>
-              {skill.createdAt && (
-                <>
-                  <span className="opacity-50">•</span>
-                  <span>{formatRelativeDate(skill.createdAt, t("lang" as any))}</span>
-                </>
-              )}
             </div>
           </div>
         </div>

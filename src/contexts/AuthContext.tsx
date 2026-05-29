@@ -148,38 +148,80 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signUp = async (email: string, password: string, name: string, surname?: string, skills?: string[]) => {
     try {
+      const trimmedEmail = email.trim();
+      const trimmedName = name.trim();
+      
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: trimmedEmail,
         password,
         options: {
           data: {
-            name,
-            surname: surname || "",
-            email,
+            name: trimmedName,
+            surname: surname?.trim() || "",
+            email: trimmedEmail,
             bio: "",
             skills: skills || [],
           },
         },
       });
+
+      if (!error && data.user && skills && skills.length > 0) {
+        const userId = data.user.id;
+        const trimmedSurname = surname?.trim() || "";
+        const fullName = [trimmedName, trimmedSurname].filter(Boolean).join(" ");
+        
+        const skillInserts = skills.map(title => ({
+          user_id: userId,
+          title: title.trim(),
+          description: "New skill shared during signup",
+          category: "other",
+          level: "beginner",
+          format: "online",
+          duration: 60,
+          user_name: fullName,
+          user_avatar: null
+        }));
+        
+        // We catch error but don't block the main signup return
+        supabase.from("skills").insert(skillInserts).then(({ error: skillError }) => {
+          if (skillError) console.error("Error inserting initial skills:", skillError);
+        });
+      }
+
       return { data, error };
     } catch (err: any) {
+      console.error("Critical signUp error:", err);
       if (isSilentError(err)) return { data: null, error: null };
+      
+      // Handle the generic browser network error
+      if (err.message === "Failed to fetch" || err.message?.includes("fetch")) {
+        const networkError = new Error("Network error: Could not reach authentication server. Please check your internet connection.");
+        return { data: null, error: networkError };
+      }
+      
       return { data: null, error: err };
     }
   };
 
   const updateProfile = async (data: { name?: string; surname?: string; bio?: string; skills?: string[]; avatar_id?: string; phone?: string; [key: string]: any }) => {
     try {
+      // Clean up inputs
+      const cleanData: any = {};
+      Object.keys(data).forEach(key => {
+        if (typeof data[key] === 'string') cleanData[key] = data[key].trim();
+        else cleanData[key] = data[key];
+      });
+
       const { data: updated, error } = await supabase.auth.updateUser({
-        data: data,
+        data: cleanData,
       });
       
       if (error) throw error;
 
       // Sync display fields onto user's existing skill cards
       if (updated?.user) {
-        setUser(updated.user); // Upate auth context user immediately
-        const meta = { ...(updated.user.user_metadata || {}), ...data };
+        setUser(updated.user); // Update auth context user immediately
+        const meta = { ...(updated.user.user_metadata || {}), ...cleanData };
         const name = meta.name || "Anonymous";
         const surname = meta.surname || "";
         const displayName = surname ? `${name} ${surname.charAt(0)}.` : name;
@@ -197,6 +239,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       return { error: null };
     } catch (err: any) {
+      console.error("Critical updateProfile error:", err);
       if (isSilentError(err)) return { error: null };
       console.warn("Could not fully sync profile", err);
       return { error: err };
@@ -206,12 +249,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signIn = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
       return { error };
     } catch (err: any) {
+      console.error("Critical signIn error:", err);
       if (isSilentError(err)) return { error: null };
+      
+      if (err.message === "Failed to fetch" || err.message?.includes("fetch")) {
+        const networkError = new Error("Network error: Could not reach authentication server. Please check your internet connection.");
+        return { error: networkError };
+      }
+      
       return { error: err };
     }
   };

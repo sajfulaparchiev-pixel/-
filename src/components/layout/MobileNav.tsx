@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { Home, Search, Calendar, User, Plus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSkills } from "@/contexts/SkillsContext";

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
   Lock,
@@ -71,7 +71,18 @@ const Auth = () => {
     e.preventDefault();
     if (isSubmitting) return;
 
+    const email = formData.email.trim();
+    const name = formData.name.trim();
+
     if (mode === "signup") {
+      if (!email || !formData.password || !name) {
+        toast.error(t("fillAllFields"));
+        return;
+      }
+      if (formData.password.length < 6) {
+        toast.error(t("passwordMinLength"));
+        return;
+      }
       if (formData.password !== formData.confirmPassword) {
         toast.error(t("passwordsDoNotMatch"));
         return;
@@ -80,15 +91,26 @@ const Auth = () => {
         toast.error(t("chooseInterestError"));
         return;
       }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast.error(t("invalidEmail"));
+        return;
+      }
+    } else {
+      if (!email || !formData.password) {
+        toast.error(t("fillAllFields"));
+        return;
+      }
     }
 
     setIsSubmitting(true);
     try {
       if (mode === "signup") {
         const { data, error } = await signUp(
-          formData.email,
+          email,
           formData.password,
-          formData.name,
+          name,
           formData.surname,
           selectedSkills
         );
@@ -100,14 +122,17 @@ const Auth = () => {
           toast.success(t("accountCreatedTitle"), {
             description: t("emailNotConfirmed"),
           });
+          setMode("login");
+          // Clear password but keep email for login
+          setFormData(prev => ({ ...prev, password: "", confirmPassword: "" }));
         } else {
           toast.success(t("accountCreatedTitle"), {
             description: t("accountCreatedDesc"),
           });
+          // Redirect handled by useEffect
         }
-        setMode("login");
       } else {
-        const { error } = await signIn(formData.email, formData.password);
+        const { error } = await signIn(email, formData.password);
         if (error) throw error;
         
         toast.success(t("welcomeBackTitle"), {
@@ -120,7 +145,20 @@ const Auth = () => {
         return;
       }
       console.error("Auth error:", error);
-      toast.error(error.message || t("genericAuthError"));
+      
+      let message = error.message || t("genericAuthError");
+      
+      // Handle reachability errors
+      if (message.includes("Failed to fetch") || message.includes("fetch") || message.includes("Network error")) {
+        message = t("networkError") || "Network error. Please check your internet connection.";
+      }
+      
+      // Handle the common "Invalid login credentials" from Supabase
+      if (message.includes("Invalid login credentials")) {
+        message = t("invalidEmailPassword") || "Invalid email or password";
+      }
+      
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

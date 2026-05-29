@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import Header from "@/components/layout/Header";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import LevelProgress from "@/components/profile/LevelProgress";
 import PortfolioGallery from "@/components/profile/PortfolioGallery";
-import { validateName } from "@/services/moderationService";
 import UserAvatar from "@/components/profile/UserAvatar";
 import SkillCard from "@/components/skills/SkillCard";
 
@@ -83,20 +82,6 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
-    const nameValidation = validateName(editForm.name);
-    if (!nameValidation.isValid) {
-      toast({ title: t("error"), description: t(nameValidation.error as any), variant: "destructive" });
-      return;
-    }
-
-    if (editForm.surname) {
-      const surnameValidation = validateName(editForm.surname);
-      if (!surnameValidation.isValid) {
-        toast({ title: t("error"), description: t(surnameValidation.error as any), variant: "destructive" });
-        return;
-      }
-    }
-
     setIsSaving(true);
     try {
       const { error } = await updateProfile({
@@ -287,13 +272,15 @@ const Profile = () => {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-4 h-4 text-primary" />
-                    <span className="font-medium">{sessionsCount}</span>
-                    <span className="text-muted-foreground">{t("sessionsCount")}</span>
+                    <span className="text-muted-foreground">
+                      {t("sessionsCount").replace("{n}", sessionsCount.toString())}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-primary" />
-                    <span className="font-medium">{skillsCount}</span>
-                    <span className="text-muted-foreground">{t("skillsCount")}</span>
+                    <span className="text-muted-foreground">
+                      {t("skillsCount").replace("{n}", skillsCount.toString())}
+                    </span>
                   </div>
                 </div>
               </div>

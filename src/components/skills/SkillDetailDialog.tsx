@@ -20,7 +20,6 @@ import { useExchangeRequest } from "@/contexts/ExchangeRequestContext";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getCategoryKey } from "@/utils/categories";
-import { formatRelativeDate } from "@/utils/date";
 
 interface SkillDetailDialogProps {
   skill: Skill | null;
@@ -132,15 +131,6 @@ const SkillDetailDialog = ({ skill, open, onOpenChange }: SkillDetailDialogProps
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>{t("sessionsCount").replace("{n}", skill.user.sessionsCount.toString())}</span>
                 </div>
-                {skill.createdAt && (
-                  <>
-                    <span className="opacity-30">•</span>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{formatRelativeDate(skill.createdAt, t("lang" as any))}</span>
-                    </div>
-                  </>
-                )}
               </div>
 
               {(skill.user.location || skill.user.telegram || skill.user.email) && (
@@ -213,24 +203,26 @@ const SkillDetailDialog = ({ skill, open, onOpenChange }: SkillDetailDialogProps
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button 
-                variant="outline" 
-                className="flex-1 h-12 rounded-xl border-border bg-background hover:bg-secondary transition-all font-bold gap-2 text-sm order-2 sm:order-1" 
-                onClick={handleWriteClick}
-              >
-                <MessageCircle className="w-4 h-4" />
-                {t("write")}
-              </Button>
-              <Button 
-                variant="hero" 
-                className="flex-[1.5] h-12 rounded-xl font-bold shadow-lg shadow-primary/10 transition-all hover:scale-[1.01] active:scale-[0.99] gap-2 text-sm order-1 sm:order-2" 
-                onClick={handleExchangeClick}
-              >
-                <Phone className="w-4 h-4" />
-                {t("offerExchange")}
-              </Button>
-            </div>
+            {user?.id !== skill.userId && (
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 h-12 rounded-xl border-border bg-background hover:bg-secondary transition-all font-bold gap-2 text-sm order-2 sm:order-1" 
+                  onClick={handleWriteClick}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {t("write")}
+                </Button>
+                <Button 
+                  variant="hero" 
+                  className="flex-[1.5] h-12 rounded-xl font-bold shadow-lg shadow-primary/10 transition-all hover:scale-[1.01] active:scale-[0.99] gap-2 text-sm order-1 sm:order-2" 
+                  onClick={handleExchangeClick}
+                >
+                  <Phone className="w-4 h-4" />
+                  {t("offerExchange")}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

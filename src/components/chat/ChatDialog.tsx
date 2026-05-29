@@ -99,7 +99,7 @@ const makeConversationId = (a: string, b: string) =>
   a < b ? `${a}_${b}` : `${b}_${a}`;
 
 // Compress image to original type via canvas if massive, otherwise keep original
-const compressImage = (file: File): Promise<{ data: string; type: string; name: string }> =>
+const compressImage = (file: File, t: any): Promise<{ data: string; type: string; name: string }> =>
   new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
@@ -184,8 +184,6 @@ const AudioPlayer = ({ src }: { src: string }) => {
     </div>
   );
 };
-
-import { validateContent } from "@/services/moderationService";
 
 const ChatDialog = ({
   open,
@@ -385,7 +383,7 @@ const ChatDialog = ({
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [open, conversationId, user, recipientId]);
+  }, [open, conversationId, user, recipientId, t]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -483,15 +481,6 @@ const ChatDialog = ({
     }
     const text = newMessage.trim();
     if (!text && !pendingFile) return;
-
-    // Content Moderation for text messages
-    if (text) {
-      const modResult = validateContent(text, true);
-      if (!modResult.isValid) {
-        toast.error(t(modResult.error as any));
-        return;
-      }
-    }
     
     setSending(true);
     setUploadProgress(0);
@@ -642,7 +631,7 @@ const ChatDialog = ({
       setSending(false);
       setUploadProgress(null);
     }
-  }, [newMessage, pendingFile, user, recipientId, conversationId, senderName, localTyping]);
+  }, [newMessage, pendingFile, user, recipientId, conversationId, senderName, localTyping, t]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -775,7 +764,7 @@ const ChatDialog = ({
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString(language === "ru" ? "ru-RU" : "en-US", { hour: "2-digit", minute: "2-digit" });
 
-  const formatDateLabel = (iso: string) => {
+  const formatDateLabel = useCallback((iso: string) => {
     const d = new Date(iso);
     const today = new Date();
     const yesterday = new Date();
@@ -783,7 +772,7 @@ const ChatDialog = ({
     if (d.toDateString() === today.toDateString()) return t("today");
     if (d.toDateString() === yesterday.toDateString()) return t("yesterday");
     return d.toLocaleDateString(language === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "long" });
-  };
+  }, [t, language]);
 
   // Group with date separators
   const grouped = useMemo(() => {
@@ -798,7 +787,7 @@ const ChatDialog = ({
       out.push({ type: "msg", m });
     }
     return out;
-  }, [visibleMessages]);
+  }, [visibleMessages, formatDateLabel]);
 
   const renderFile = (m: DBMessage) => {
     if (!m.file_data || !m.file_type) return null;

@@ -67,7 +67,6 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
           category: s.category,
           wantedSkills: s.wanted_skills || [],
           userId: s.user_id,
-          createdAt: s.created_at,
           user: {
             name: s.user_name || t("user"),
             avatar: s.user_avatar || undefined,
@@ -87,11 +86,14 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
       }
 
       console.error(`Skills fetch error (attempt ${retryCount + 1}):`, err);
+      
+      const isNetworkError = err.message === 'Failed to fetch' || err.message?.includes('fetch') || err.message?.includes('Network error');
+      
       if (retryCount < 2) {
         // Wait 2 seconds before retry
         setTimeout(() => fetchSkills(retryCount + 1), 2000);
       } else {
-        toast.error(t("skillsLoadError"));
+        toast.error(isNetworkError ? t("networkError") : t("skillsLoadError"));
       }
     } finally {
       setLoading(false);
@@ -133,7 +135,8 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       console.error("Error adding skill:", error);
-      toast.error(t("skillAddError") + " " + JSON.stringify(error));
+      const isNetworkError = error.message === 'Failed to fetch' || error.message?.includes('fetch') || error.message?.includes('Network error');
+      toast.error(isNetworkError ? t("networkError") : (t("skillAddError") + " " + (error.message || "")));
       throw error;
     }
 
@@ -151,7 +154,8 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       console.error("Error deleting skill:", error);
-      toast.error(t("skillDeleteError"));
+      const isNetworkError = error.message === 'Failed to fetch' || error.message?.includes('fetch') || error.message?.includes('Network error');
+      toast.error(isNetworkError ? t("networkError") : t("skillDeleteError"));
       return;
     }
 
@@ -211,7 +215,8 @@ export const SkillsProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       console.error("Error creating exchange:", error);
-      toast.error(t("exchangeSendError"));
+      const isNetworkError = error.message === 'Failed to fetch' || error.message?.includes('fetch') || error.message?.includes('Network error');
+      toast.error(isNetworkError ? t("networkError") : t("exchangeSendError"));
       return;
     }
 

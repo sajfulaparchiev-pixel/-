@@ -15,7 +15,6 @@ import {
 import { Plus, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSkills } from "@/contexts/SkillsContext";
-import { validateContent } from "@/services/moderationService";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -76,18 +75,6 @@ const AddSkillDialog = ({ open, onOpenChange }: AddSkillDialogProps) => {
     }
     if (wordsOver) {
       toast({ title: t("descTooLong"), description: t("maxWords").replace("{n}", MAX_DESC_WORDS.toString()), variant: "destructive" });
-      return;
-    }
-
-    const titleVal = validateContent(formData.title);
-    if (!titleVal.isValid) {
-      toast({ title: t("error"), description: t(titleVal.error as any), variant: "destructive" });
-      return;
-    }
-
-    const descVal = validateContent(formData.description);
-    if (!descVal.isValid) {
-      toast({ title: t("error"), description: t(descVal.error as any), variant: "destructive" });
       return;
     }
 

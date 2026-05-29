@@ -191,7 +191,6 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
         event: "call-offer",
         payload: { 
           callerId: user.id, 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           callerName: (user.user_metadata as any)?.user_name || user.email?.split("@")[0] || t("user"),
           withVideo,
           offer 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import Header from "@/components/layout/Header";
 import MobileNav from "@/components/layout/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,7 @@ const UserProfilePage = () => {
     })();
     
     return () => { cancelled = true; };
-  }, [id, user]);
+  }, [id, user, t]);
 
   if (!id) return null;
 
@@ -203,13 +203,15 @@ const UserProfilePage = () => {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-4 h-4 text-primary" />
-                    <span className="font-medium">{sessionsCount}</span>
-                    <span className="text-muted-foreground">{t("sessionsCount")}</span>
+                    <span className="text-muted-foreground">
+                      {t("sessionsCount").replace("{n}", sessionsCount.toString())}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-primary" />
-                    <span className="font-medium">{skillsCount}</span>
-                    <span className="text-muted-foreground">{t("skillsCount")}</span>
+                    <span className="text-muted-foreground">
+                      {t("skillsCount").replace("{n}", skillsCount.toString())}
+                    </span>
                   </div>
                 </div>
               </div>

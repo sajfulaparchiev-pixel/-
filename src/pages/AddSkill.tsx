@@ -21,12 +21,10 @@ import { useSkills } from "@/contexts/SkillsContext";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 
+import { CATEGORY_KEYS } from "@/utils/categories";
+
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 const MAX_DESC_WORDS = 350;
-
-import { validateContent } from "@/services/moderationService";
-
-import { CATEGORY_KEYS } from "@/utils/categories";
 
 const AddSkill = () => {
   const { t } = useLanguage();
@@ -80,18 +78,6 @@ const AddSkill = () => {
       return;
     }
 
-    // AI/Content Moderation
-    const titleVal = validateContent(formData.title);
-    if (!titleVal.isValid) {
-      toast({ title: t("error"), description: t(titleVal.error as any), variant: "destructive" });
-      return;
-    }
-
-    const descVal = validateContent(formData.description);
-    if (!descVal.isValid) {
-      toast({ title: t("error"), description: t(descVal.error as any), variant: "destructive" });
-      return;
-    }
     if (!formData.category) {
       toast({ title: t("selectCategoryToast"), variant: "destructive" });
       return;
